@@ -1,0 +1,22 @@
+<idea-plugin>
+    <id>com.codertainment.scrcpy</id>
+    <name>scrcpy</name>
+    <vendor email="shripal17@gmail.com" url="https://github.com/shripal17">Codertainment</vendor>
+
+    <description><![CDATA[
+    Provides options for running scrcpy directly from IntelliJ IDEA/Android Studio
+    ]]></description>
+
+    <!-- please see https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+         on how to target different products -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+      <toolWindow id="scrcpy_controller" anchor="right" factoryClass="com.codertainment.scrcpy.controller.ScrcpyToolWindowFactory"/>
+      <applicationService serviceImplementation="com.codertainment.scrcpy.controller.model.ScrcpyProps" />
+    </extensions>
+
+    <actions>
+        <!-- Add your actions here -->
+    </actions>
+</idea-plugin>

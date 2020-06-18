@@ -1,0 +1,46 @@
+- ADB
+-- Devices
+-- ADB WiFi Connect
+-- ADB USB to WiFi
+
+- Display
+-- Max Res
+-- Bit Rate
+-- Max FPS
+-- Crop
+--- x pixels
+--- y pixels
+--- x offset
+--- y offset
+-- Lock Video Orientation
+
+- Help and about
+-- About plugin
+-- About scrcpy
+-- scrcpy shortcuts
+
+- Recording
+-- Record checkbox
+-- Record folder
+-- Record file name
+-- Disable mirroring
+
+- Window Config
+-- Title
+-- Window Position and Size
+--- X
+--- Y
+--- Width
+--- Height
+-- Borderless
+-- Always-on-top
+-- Full Screen
+-- Rotation
+
+- Other + text injection preference
+-- Read-only
+-- Stay Awake
+-- Turn screen off
+-- Render expired frames
+-- Show touches
+-- Text injection preference
