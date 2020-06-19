@@ -20,8 +20,7 @@ internal fun JFormattedTextField?.numberFormatter(maxValue: Int, defValue: Int? 
   NumberFormatter(NumberFormat.getIntegerInstance()).apply {
     valueClass = Integer::class.java
     format = DecimalFormat("#####")
-    allowsInvalid = false
-    overwriteMode = true
+    allowsInvalid = true
     maximum = maxValue
     commitsOnValidEdit = true
     install(this@numberFormatter)

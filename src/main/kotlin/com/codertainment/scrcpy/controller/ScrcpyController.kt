@@ -11,12 +11,14 @@ import com.intellij.ui.table.JBTable
 import se.vidstige.jadb.DeviceDetectionListener
 import se.vidstige.jadb.JadbConnection
 import se.vidstige.jadb.JadbDevice
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import java.net.ConnectException
 import java.net.InetSocketAddress
+import java.util.concurrent.ConcurrentHashMap
 import javax.swing.*
+import javax.swing.event.TableModelEvent
+import javax.swing.event.TableModelListener
 import javax.swing.table.DefaultTableModel
+import javax.swing.table.TableModel
 import kotlin.reflect.KMutableProperty1
 
 typealias IntProp = KMutableProperty1<ScrcpyProps, Int?>
@@ -78,7 +80,10 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private var run: JButton? = null
   private var stop: JButton? = null
 
-  private var shouldStop = false
+  private var commandExecutors = ConcurrentHashMap<String, CommandExecutor>()
+  private var allDevices = listOf<JadbDevice>()
+  private var selectedDevices = arrayListOf<String>()
+  private var dataListener = DeviceCheckListener()
 
   init {
     initAdb()
@@ -93,37 +98,30 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     initButtons()
 
     run?.addActionListener {
-      val cmds = arrayListOf("scrcpy")
-      if (maxResolution.active()) {
-        cmds.add("-m")
-        cmds.add(maxResolution.text())
-      }
-
-      println("Running: ${cmds.joinToString(" ")}")
-      val t = Thread {
-        val process = ProcessBuilder(cmds)
-          .redirectError(ProcessBuilder.Redirect.PIPE)
-          .redirectOutput(ProcessBuilder.Redirect.PIPE)
-          .redirectInput(ProcessBuilder.Redirect.PIPE)
-          .start()
-
-        val reader = BufferedReader(InputStreamReader(process.inputStream))
-
-        val output = StringBuilder()
-
-        var line: String? = ""
-        while (!shouldStop || line != null) {
-          line = reader.readLine()
-          println(line)
-          output.append(line + "\n")
+      selectedDevices.forEach {
+        if (!commandExecutors.containsKey(it)) {
+          val cmd = CommandExecutor(props.buildCommand(it)) { exit, msg ->
+            exit?.let { _ ->
+              commandExecutors.remove(it)
+              println("Exited: $exit")
+            }
+            msg?.let {
+              println(it)
+            }
+          }
+          cmd.start()
+          commandExecutors[it] = cmd
         }
-        process.destroy()
-        shouldStop = false
       }
-      t.start()
+    }
+
+    stop?.addActionListener {
+      selectedDevices.intersect(commandExecutors.keys().toList()).forEach {
+        commandExecutors[it]?.interrupt()
+        commandExecutors.remove(it)
+      }
     }
   }
-
 
   private fun initDisplayFields() {
     maxResolution.bindNumber(4320, ScrcpyProps::maxResolution)
@@ -215,12 +213,10 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
 
   private fun initButtons() {
     wifiConnect?.addActionListener {
-      if (wifiIp1 == null) return@addActionListener
-      if (wifiIp1.active() && wifiIp2.active() && wifiIp3.active() && wifiIp4.active() && wifiPort.active()) {
+      if (props.isIpValid) {
+        println("ip: ${props.ip}")
         try {
-          val ip = listOf(wifiIp1, wifiIp2, wifiIp3, wifiIp4).joinToString(".") { it.text() }
-          println("ip: $ip")
-          conn?.connectToTcpDevice(InetSocketAddress(ip, wifiPort.text().toInt()))
+          conn?.connectToTcpDevice(InetSocketAddress(props.ip, props.port!!))
           loadDevices()
         } catch (ce: ConnectException) {
           ce.printStackTrace()
@@ -237,10 +233,6 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
 
     devicesRefresh?.addActionListener {
       loadDevices()
-    }
-
-    stop?.addActionListener {
-      shouldStop = true
     }
   }
 
@@ -259,23 +251,29 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
       if (conn == null) return
       conn?.createDeviceWatcher(this)
 
-      val d = conn!!.devices
+      allDevices = conn!!.devices
+      selectedDevices.clear()
 
       devices?.apply {
-        model = object : DefaultTableModel(d.map { arrayOf(false, it.serial, it.state.name) }.toTypedArray(), arrayOf("Run", "Serial", "State")) {
+        model = object : DefaultTableModel(allDevices.map { arrayOf(false, it.serial, it.state.name, commandExecutors.containsKey(it.serial)) }.toTypedArray(), arrayOf("Select", "Serial", "State", "Running")) {
           override fun getColumnClass(p0: Int): Class<*> {
-            return if (p0 == 0) Boolean::class.javaObjectType else String::class.java
+            return if (p0 == 0 || p0 == 3) Boolean::class.javaObjectType else String::class.java
           }
 
           override fun isCellEditable(p0: Int, p1: Int): Boolean {
             return p1 == 0
           }
-        }
+        }.also { it.addTableModelListener(dataListener) }
         setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
         columnModel.getColumn(0).apply {
-          preferredWidth = 50
-          maxWidth = 50
-          width = 50
+          preferredWidth = 40
+          maxWidth = 40
+          width = 40
+        }
+        columnModel.getColumn(3).apply {
+          preferredWidth = 40
+          maxWidth = 40
+          width = 40
         }
       }
     } catch (ce: ConnectException) {
@@ -306,5 +304,24 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
 
   override fun onDetect(devices: MutableList<JadbDevice>?) {
     loadDevices()
+  }
+
+  inner class DeviceCheckListener : TableModelListener {
+    override fun tableChanged(e: TableModelEvent?) {
+      e?.let {
+        if (e.firstRow == e.lastRow && e.column == 0 && e.source is TableModel) {
+          val isChecked = (e.source as TableModel).getValueAt(e.firstRow, e.column) as Boolean
+          val current = allDevices[e.firstRow].serial
+          if (isChecked) {
+            selectedDevices.add(current)
+          } else if (selectedDevices.contains(current)) {
+            selectedDevices.remove(current)
+          }
+          val intersection = commandExecutors.keys().toList().intersect(selectedDevices)
+          run?.isEnabled = selectedDevices.isNotEmpty() && intersection.isEmpty()
+          stop?.isEnabled = selectedDevices.isNotEmpty() && intersection.isNotEmpty()
+        }
+      }
+    }
   }
 }
