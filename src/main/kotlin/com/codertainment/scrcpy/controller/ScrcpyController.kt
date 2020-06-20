@@ -6,11 +6,16 @@ import com.codertainment.scrcpy.controller.model.ScrcpyProps
 import com.codertainment.scrcpy.controller.model.VideoOrientation
 import com.codertainment.scrcpy.controller.util.*
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.fileChooser.FileChooser
+import com.intellij.openapi.fileChooser.FileChooserDescriptor
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.ui.table.JBTable
 import se.vidstige.jadb.DeviceDetectionListener
 import se.vidstige.jadb.JadbConnection
 import se.vidstige.jadb.JadbDevice
+import java.awt.Dimension
+import java.io.File
 import java.net.ConnectException
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
@@ -39,6 +44,8 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private var wifiIp3: JFormattedTextField? = null
   private var wifiIp4: JFormattedTextField? = null
   private var wifiPort: JFormattedTextField? = null
+  private var devicesContainer: JScrollPane? = null
+  private var adbPanel: JPanel? = null
   private var devices: JBTable? = null
 
   //display
@@ -47,6 +54,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private var bitRate: JFormattedTextField? = null
   private var bitRateUnit: JComboBox<String>? = null
   private var videoOrientation: JComboBox<String>? = null
+  private var crop: JCheckBox? = null
   private var cropX: JFormattedTextField? = null
   private var cropY: JFormattedTextField? = null
   private var cropXOffset: JFormattedTextField? = null
@@ -65,6 +73,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private var borderless: JCheckBox? = null
   private var alwaysOnTop: JCheckBox? = null
   private var fullscreen: JCheckBox? = null
+  private var position: JCheckBox? = null
   private var positionX: JFormattedTextField? = null
   private var positionY: JFormattedTextField? = null
   private var positionWidth: JFormattedTextField? = null
@@ -97,21 +106,30 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
 
     initButtons()
 
+    updateButtons()
+
     run?.addActionListener {
-      selectedDevices.forEach {
-        if (!commandExecutors.containsKey(it)) {
-          val cmd = CommandExecutor(props.buildCommand(it)) { exit, msg ->
-            exit?.let { _ ->
-              commandExecutors.remove(it)
-              println("Exited: $exit")
+      try {
+        selectedDevices.iterator().forEach {
+          if (!commandExecutors.containsKey(it)) {
+            val cmd = CommandExecutor(props.buildCommand(it)) { exit, msg ->
+              exit?.let { _ ->
+                commandExecutors.remove(it)
+                println("Exited: $exit")
+                loadDevices(false)
+              }
+              msg?.let {
+                println(it)
+              }
             }
-            msg?.let {
-              println(it)
-            }
+            cmd.start()
+            commandExecutors[it] = cmd
+            loadDevices(false)
           }
-          cmd.start()
-          commandExecutors[it] = cmd
         }
+        updateButtons()
+      } catch (cce: ConcurrentModificationException) {
+        cce.printStackTrace()
       }
     }
 
@@ -119,7 +137,9 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
       selectedDevices.intersect(commandExecutors.keys().toList()).forEach {
         commandExecutors[it]?.interrupt()
         commandExecutors.remove(it)
+        loadDevices(false)
       }
+      updateButtons()
     }
   }
 
@@ -130,13 +150,15 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
 
     bitRateUnit?.selectedIndex = BitRateUnit.values().indexOf(props.bitRateUnit)
     bitRateUnit?.addActionListener {
-      props.bitRateUnit = if (bitRateUnit?.selectedIndex ?: 0 == 0) BitRateUnit.M else BitRateUnit.K
+      props.bitRateUnit = BitRateUnit.values()[bitRateUnit?.selectedIndex ?: 0]
     }
 
     videoOrientation?.selectedIndex = VideoOrientation.values().indexOf(props.videoOrientation)
     videoOrientation?.addActionListener {
       props.videoOrientation = VideoOrientation.values()[videoOrientation?.selectedIndex ?: 0]
     }
+
+    crop.bind(ScrcpyProps::crop)
 
     cropX.bindNumber(7680, ScrcpyProps::cropX)
     cropY.bindNumber(4320, ScrcpyProps::cropY)
@@ -148,7 +170,12 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     enableRecording.bind(ScrcpyProps::enableRecording)
     disableMirroring.bind(ScrcpyProps::disableMirroring)
     fileName.bindString(ScrcpyProps::recordingFileName)
-    // TODO Folder selection
+    updateRecordingFolder()
+  }
+
+  private fun updateRecordingFolder() {
+    folderLabel?.text = props.recordingPath ?: "Folder"
+    folderButton?.text = if(props.recordingPath == null) "Select" else "Change"
   }
 
   private fun initWindowFields() {
@@ -161,6 +188,8 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     borderless.bind(ScrcpyProps::borderless)
     alwaysOnTop.bind(ScrcpyProps::alwaysOnTop)
     fullscreen.bind(ScrcpyProps::fullscreen)
+
+    position.bind(ScrcpyProps::position)
 
     positionX.bindNumber(7680, ScrcpyProps::positionX)
     positionY.bindNumber(4320, ScrcpyProps::positionY)
@@ -212,27 +241,37 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   }
 
   private fun initButtons() {
+    folderButton?.addActionListener {
+      val vfs = if (props.recordingPath != null) LocalFileSystem.getInstance().findFileByIoFile(File(props.recordingPath)) else null
+      FileChooser.chooseFile(FileChooserDescriptor(false, true, false, false, false, false), null, vfs) {
+        props.recordingPath = it.path
+        updateRecordingFolder()
+      }
+    }
+
     wifiConnect?.addActionListener {
       if (props.isIpValid) {
         println("ip: ${props.ip}")
-        try {
-          conn?.connectToTcpDevice(InetSocketAddress(props.ip, props.port!!))
-          loadDevices()
-        } catch (ce: ConnectException) {
-          ce.printStackTrace()
-          startAdbDaemon {
-            if (!it) {
-              Notifier.notify("scrcpy ADB Failed", "ADB initialization failed, please run adb manually", NotificationType.ERROR)
-            } else {
-              wifiConnect?.doClick()
+        Thread {
+          try {
+            conn?.connectToTcpDevice(InetSocketAddress(props.ip, props.port!!))
+            loadDevices()
+          } catch (ce: ConnectException) {
+            ce.printStackTrace()
+            startAdbDaemon {
+              if (!it) {
+                Notifier.notify("scrcpy ADB Failed", "ADB initialization failed, please run adb manually", NotificationType.ERROR)
+              } else {
+                wifiConnect?.doClick()
+              }
             }
           }
-        }
+        }.start()
       }
     }
 
     devicesRefresh?.addActionListener {
-      loadDevices()
+      loadDevices(true)
     }
   }
 
@@ -246,12 +285,14 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     }
   }
 
-  private fun loadDevices() {
+  private fun loadDevices(hardRefresh: Boolean = true) {
     try {
       if (conn == null) return
       conn?.createDeviceWatcher(this)
 
-      allDevices = conn!!.devices
+      if (hardRefresh || allDevices.isEmpty()) {
+        allDevices = conn!!.devices
+      }
       selectedDevices.clear()
 
       devices?.apply {
@@ -266,16 +307,17 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
         }.also { it.addTableModelListener(dataListener) }
         setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
         columnModel.getColumn(0).apply {
-          preferredWidth = 40
-          maxWidth = 40
-          width = 40
+          preferredWidth = 50
+          maxWidth = 50
+          width = 50
         }
         columnModel.getColumn(3).apply {
-          preferredWidth = 40
-          maxWidth = 40
-          width = 40
+          preferredWidth = 60
+          maxWidth = 60
+          width = 60
         }
       }
+      devices?.preferredScrollableViewportSize = Dimension(devices?.preferredSize?.width ?: 0, devices?.rowHeight ?: 0 * 3)
     } catch (ce: ConnectException) {
       ce.printStackTrace()
       startAdbDaemon {
@@ -317,11 +359,15 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
           } else if (selectedDevices.contains(current)) {
             selectedDevices.remove(current)
           }
-          val intersection = commandExecutors.keys().toList().intersect(selectedDevices)
-          run?.isEnabled = selectedDevices.isNotEmpty() && intersection.isEmpty()
-          stop?.isEnabled = selectedDevices.isNotEmpty() && intersection.isNotEmpty()
+          updateButtons()
         }
       }
     }
+  }
+
+  private fun updateButtons() {
+    val intersection = commandExecutors.keys().toList().intersect(selectedDevices)
+    run?.isEnabled = selectedDevices.isNotEmpty() && intersection.isEmpty()
+    stop?.isEnabled = selectedDevices.isNotEmpty() && intersection.isNotEmpty()
   }
 }

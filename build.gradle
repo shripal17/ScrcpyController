@@ -31,10 +31,10 @@ group  "com.codertainment"
 version "1.0-SNAPSHOT"
 
 intellij {
-    pluginName 'scrcpy_controller'
+    pluginName 'Scrcpy Controller'
     updateSinceUntilBuild false
 
-    //intellij.localPath = project.hasProperty("StudioRunPath") ? StudioRunPath : StudioCompilePath
+    intellij.localPath = project.hasProperty("StudioRunPath") ? StudioRunPath : StudioCompilePath
 }
 
 

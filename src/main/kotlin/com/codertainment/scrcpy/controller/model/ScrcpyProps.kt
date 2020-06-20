@@ -22,6 +22,7 @@ data class ScrcpyProps(
   var bitRate: Int? = null,
   var bitRateUnit: BitRateUnit = BitRateUnit.M,
   var videoOrientation: VideoOrientation = VideoOrientation.Unlocked,
+  var crop: Boolean = false,
   var cropX: Int? = null,
   var cropY: Int? = null,
   var cropXOffset: Int? = null,
@@ -39,6 +40,7 @@ data class ScrcpyProps(
   var borderless: Boolean = false,
   var alwaysOnTop: Boolean = false,
   var fullscreen: Boolean = false,
+  var position: Boolean = false,
   var positionX: Int? = null,
   var positionY: Int? = null,
   var positionWidth: Int? = null,
@@ -88,7 +90,7 @@ data class ScrcpyProps(
       add(videoOrientation.value.toString())
     }
 
-    if (cropX != null && cropY != null && cropXOffset != null && cropYOffset != null) {
+    if (cropX != null && cropY != null && cropXOffset != null && cropYOffset != null && crop) {
       add("--crop")
       add("$cropX:$cropY:$cropXOffset:$cropYOffset")
     }
@@ -114,21 +116,23 @@ data class ScrcpyProps(
       add("-f")
     }
 
-    positionX?.let {
-      add("--window-x")
-      add(it.toString())
-    }
-    positionY?.let {
-      add("--window-y")
-      add(it.toString())
-    }
-    positionWidth?.let {
-      add("--window-width")
-      add(it.toString())
-    }
-    positionHeight?.let {
-      add("--window-height")
-      add(it.toString())
+    if(position) {
+      positionX?.let {
+        add("--window-x")
+        add(it.toString())
+      }
+      positionY?.let {
+        add("--window-y")
+        add(it.toString())
+      }
+      positionWidth?.let {
+        add("--window-width")
+        add(it.toString())
+      }
+      positionHeight?.let {
+        add("--window-height")
+        add(it.toString())
+      }
     }
 
     if (readOnly) {

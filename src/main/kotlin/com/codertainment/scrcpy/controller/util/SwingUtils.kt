@@ -1,6 +1,5 @@
 package com.codertainment.scrcpy.controller.util
 
-import java.text.DecimalFormat
 import java.text.NumberFormat
 import javax.swing.JFormattedTextField
 import javax.swing.JTextField
@@ -17,9 +16,8 @@ internal fun JTextField?.active() = !this?.text.isNullOrEmpty()
 internal fun JTextField?.text() = this?.text ?: ""
 
 internal fun JFormattedTextField?.numberFormatter(maxValue: Int, defValue: Int? = null) {
-  NumberFormatter(NumberFormat.getIntegerInstance()).apply {
+  NumberFormatter(NumberFormat.getIntegerInstance().also { it.isGroupingUsed = false }).apply {
     valueClass = Integer::class.java
-    format = DecimalFormat("#####")
     allowsInvalid = true
     maximum = maxValue
     commitsOnValidEdit = true
@@ -46,4 +44,9 @@ internal fun JTextField?.onTextChangedListener(onChanged: (text: String) -> Unit
   })
 }
 
-internal fun String.intOrNull() = if(isEmpty()) null else toInt()
+internal fun String.intOrNull() = if (isEmpty()) null else try {
+  toInt()
+} catch (e: NumberFormatException) {
+  e.printStackTrace()
+  null
+}

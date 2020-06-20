@@ -13,7 +13,7 @@ object Notifier {
   val GROUP = NotificationGroup("scrcpy Connections", NotificationDisplayType.BALLOON, true)
 
   fun notify(title: String, message: String, type: NotificationType) {
-    val n = GROUP.createNotification(title, message, type)
+    val n = GROUP.createNotification(title, null, message, type)
     n.notify(null)
   }
 }
