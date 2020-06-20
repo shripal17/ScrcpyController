@@ -12,7 +12,7 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-      <toolWindow id="scrcpy_controller" anchor="right" factoryClass="com.codertainment.scrcpy.controller.ScrcpyToolWindowFactory" icon="/toolWindowIcon.svg"/>
+      <toolWindow id="scrcpy" anchor="right" factoryClass="com.codertainment.scrcpy.controller.ScrcpyToolWindowFactory" icon="/toolWindowIcon.svg"/>
       <applicationService serviceImplementation="com.codertainment.scrcpy.controller.model.ScrcpyProps" />
     </extensions>
     <idea-version since-build="191"/>

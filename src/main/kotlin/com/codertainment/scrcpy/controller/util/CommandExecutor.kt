@@ -3,6 +3,7 @@ package com.codertainment.scrcpy.controller.util
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
+import java.util.concurrent.TimeUnit
 
 /*
  * Created by Shripal Jain
@@ -15,7 +16,7 @@ class CommandExecutor(cmds: List<String>, dir: String? = null, private val onUpd
     println("Got Command: ${cmds.joinToString(" ")}")
   }
 
-  val processBuilder = ProcessBuilder(cmds).apply {
+  private val processBuilder = ProcessBuilder(cmds).apply {
     redirectError(ProcessBuilder.Redirect.PIPE)
     redirectOutput(ProcessBuilder.Redirect.PIPE)
     redirectInput(ProcessBuilder.Redirect.PIPE)
@@ -41,7 +42,8 @@ class CommandExecutor(cmds: List<String>, dir: String? = null, private val onUpd
   }
 
   override fun interrupt() {
-    process!!.destroyForcibly()
+    process?.destroy()
+    process?.waitFor()
     super.interrupt()
   }
 }

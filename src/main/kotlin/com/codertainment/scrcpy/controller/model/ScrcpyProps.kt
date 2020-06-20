@@ -5,6 +5,7 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.util.xmlb.XmlSerializerUtil
+import java.io.File
 
 /*
  * Created by Shripal Jain
@@ -32,6 +33,7 @@ data class ScrcpyProps(
   var enableRecording: Boolean = false,
   var recordingPath: String? = null,
   var recordingFileName: String? = null,
+  var recordingFileExtension: RecordingExtension = RecordingExtension.mp4,
   var disableMirroring: Boolean = false,
 
   //window
@@ -116,7 +118,7 @@ data class ScrcpyProps(
       add("-f")
     }
 
-    if(position) {
+    if (position) {
       positionX?.let {
         add("--window-x")
         add(it.toString())
@@ -133,6 +135,22 @@ data class ScrcpyProps(
         add("--window-height")
         add(it.toString())
       }
+    }
+
+    if (enableRecording && recordingFileName != null) {
+      if (disableMirroring) {
+        add("--no-display")
+      }
+
+      add("-r")
+      val file = StringBuilder()
+      file.append("\"")
+      recordingPath?.let {
+        file.append(it)
+        file.append(File.separator)
+      }
+      file.append(recordingFileName + "." + recordingFileExtension.name + "\"")
+      add(file.toString())
     }
 
     if (readOnly) {
@@ -159,6 +177,10 @@ enum class VideoOrientation(val value: Int? = null) {
   Landscape(1),
   PortraitReverse(2),
   LandscapeReverse(3)
+}
+
+enum class RecordingExtension {
+  mp4, mkv
 }
 
 enum class BitRateUnit {

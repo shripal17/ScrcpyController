@@ -1,25 +1,24 @@
 package com.codertainment.scrcpy.controller
 
-import com.codertainment.scrcpy.controller.model.BitRateUnit
-import com.codertainment.scrcpy.controller.model.Rotation
-import com.codertainment.scrcpy.controller.model.ScrcpyProps
-import com.codertainment.scrcpy.controller.model.VideoOrientation
+import com.codertainment.scrcpy.controller.model.*
 import com.codertainment.scrcpy.controller.util.*
 import com.intellij.notification.NotificationType
-import com.intellij.openapi.fileChooser.FileChooser
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
+import com.intellij.openapi.ui.TextBrowseFolderListener
+import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.ui.table.JBTable
-import se.vidstige.jadb.DeviceDetectionListener
-import se.vidstige.jadb.JadbConnection
-import se.vidstige.jadb.JadbDevice
+import se.vidstige.jadb.*
 import java.awt.Dimension
 import java.io.File
 import java.net.ConnectException
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
 import javax.swing.*
+import javax.swing.event.AncestorEvent
+import javax.swing.event.AncestorListener
 import javax.swing.event.TableModelEvent
 import javax.swing.event.TableModelListener
 import javax.swing.table.DefaultTableModel
@@ -36,6 +35,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
 
   //adb
   private var conn: JadbConnection? = null
+  private var deviceWatcher: DeviceWatcher? = null
 
   private var devicesRefresh: JButton? = null
   private var wifiConnect: JButton? = null
@@ -62,9 +62,9 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
 
   //record
   private var enableRecording: JCheckBox? = null
-  private var folderLabel: JLabel? = null
-  private var folderButton: JButton? = null
-  private var fileName: JFormattedTextField? = null
+  private var folder: TextFieldWithBrowseButton? = null
+  private var fileName: JTextField? = null
+  private var fileExtension: JComboBox<String>? = null
   private var disableMirroring: JCheckBox? = null
 
   // window
@@ -127,7 +127,6 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
             loadDevices(false)
           }
         }
-        updateButtons()
       } catch (cce: ConcurrentModificationException) {
         cce.printStackTrace()
       }
@@ -139,8 +138,35 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
         commandExecutors.remove(it)
         loadDevices(false)
       }
-      updateButtons()
     }
+
+    mainPanel?.addAncestorListener(object : AncestorListener {
+      override fun ancestorAdded(p0: AncestorEvent?) {
+        startDeviceWatcher()
+        loadDevices(true)
+      }
+
+      override fun ancestorMoved(p0: AncestorEvent?) {
+      }
+
+      override fun ancestorRemoved(p0: AncestorEvent?) {
+        stopDeviceWatcher()
+      }
+    })
+  }
+
+  private fun startDeviceWatcher() {
+    if (toolWindow.isActive) {
+      Thread {
+        deviceWatcher?.watch()
+      }.start()
+    }
+  }
+
+  private fun stopDeviceWatcher() {
+    Thread {
+      deviceWatcher?.stop()
+    }.start()
   }
 
   private fun initDisplayFields() {
@@ -170,13 +196,25 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     enableRecording.bind(ScrcpyProps::enableRecording)
     disableMirroring.bind(ScrcpyProps::disableMirroring)
     fileName.bindString(ScrcpyProps::recordingFileName)
-    updateRecordingFolder()
+
+    fileExtension?.selectedIndex = RecordingExtension.values().indexOf(props.recordingFileExtension)
+    fileExtension?.addActionListener {
+      props.recordingFileExtension = RecordingExtension.values()[fileExtension?.selectedIndex ?: 0]
+    }
+
+    folder?.textField?.text = props.recordingPath
+    folder?.addBrowseFolderListener(object : TextBrowseFolderListener(FileChooserDescriptor(false, true, false, false, false, false)) {
+      override fun getInitialFile(): VirtualFile? {
+        return if (props.recordingPath == null) null else LocalFileSystem.getInstance().findFileByIoFile(File(props.recordingPath))
+      }
+
+      override fun onFileChosen(chosenFile: VirtualFile) {
+        super.onFileChosen(chosenFile)
+        props.recordingPath = chosenFile.path
+      }
+    })
   }
 
-  private fun updateRecordingFolder() {
-    folderLabel?.text = props.recordingPath ?: "Folder"
-    folderButton?.text = if(props.recordingPath == null) "Select" else "Change"
-  }
 
   private fun initWindowFields() {
     windowTitle.bindString(ScrcpyProps::windowTitle)
@@ -226,7 +264,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     }
   }
 
-  private fun JFormattedTextField?.bindString(prop: StringProp) {
+  private fun JTextField?.bindString(prop: StringProp) {
     this?.text = prop.get(props)
     onTextChangedListener {
       prop.set(props, it)
@@ -241,14 +279,6 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   }
 
   private fun initButtons() {
-    folderButton?.addActionListener {
-      val vfs = if (props.recordingPath != null) LocalFileSystem.getInstance().findFileByIoFile(File(props.recordingPath)) else null
-      FileChooser.chooseFile(FileChooserDescriptor(false, true, false, false, false, false), null, vfs) {
-        props.recordingPath = it.path
-        updateRecordingFolder()
-      }
-    }
-
     wifiConnect?.addActionListener {
       if (props.isIpValid) {
         println("ip: ${props.ip}")
@@ -265,6 +295,8 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
                 wifiConnect?.doClick()
               }
             }
+          } catch (ctrde: ConnectionToRemoteDeviceException) {
+            Notifier.notify("ADB WiFi Connect Failed", ctrde.localizedMessage, NotificationType.ERROR)
           }
         }.start()
       }
@@ -278,6 +310,10 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private fun initAdb() {
     try {
       conn = JadbConnection()
+      if (deviceWatcher == null) {
+        deviceWatcher = conn?.createDeviceWatcher(this)
+        startDeviceWatcher()
+      }
     } catch (e: Exception) {
       e.printStackTrace()
       conn = null
@@ -288,17 +324,24 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private fun loadDevices(hardRefresh: Boolean = true) {
     try {
       if (conn == null) return
-      conn?.createDeviceWatcher(this)
 
       if (hardRefresh || allDevices.isEmpty()) {
         allDevices = conn!!.devices
       }
       selectedDevices.clear()
 
+      updateButtons()
+
       devices?.apply {
-        model = object : DefaultTableModel(allDevices.map { arrayOf(false, it.serial, it.state.name, commandExecutors.containsKey(it.serial)) }.toTypedArray(), arrayOf("Select", "Serial", "State", "Running")) {
+        model = object : DefaultTableModel(allDevices.map {
+          var serial = it.serial
+          if (commandExecutors.containsKey(it.serial)) {
+            serial += " •"
+          }
+          arrayOf(false, serial, it.state.name)
+        }.toTypedArray(), arrayOf("Select", "Serial", "State")) {
           override fun getColumnClass(p0: Int): Class<*> {
-            return if (p0 == 0 || p0 == 3) Boolean::class.javaObjectType else String::class.java
+            return if (p0 == 0) Boolean::class.javaObjectType else String::class.java
           }
 
           override fun isCellEditable(p0: Int, p1: Int): Boolean {
@@ -310,11 +353,6 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
           preferredWidth = 50
           maxWidth = 50
           width = 50
-        }
-        columnModel.getColumn(3).apply {
-          preferredWidth = 60
-          maxWidth = 60
-          width = 60
         }
       }
       devices?.preferredScrollableViewportSize = Dimension(devices?.preferredSize?.width ?: 0, devices?.rowHeight ?: 0 * 3)
