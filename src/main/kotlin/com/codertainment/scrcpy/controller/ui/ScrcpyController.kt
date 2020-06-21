@@ -1,20 +1,29 @@
-package com.codertainment.scrcpy.controller
+package com.codertainment.scrcpy.controller.ui
 
 import com.codertainment.scrcpy.controller.model.*
 import com.codertainment.scrcpy.controller.util.*
+import com.intellij.ide.BrowserUtil
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
+import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.ui.TextBrowseFolderListener
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.ui.table.JBTable
+import com.intellij.util.net.IOExceptionDialog
+import com.vladsch.flexmark.ext.tables.TablesExtension
+import com.vladsch.flexmark.html.HtmlRenderer
+import com.vladsch.flexmark.parser.Parser
+import com.vladsch.flexmark.util.data.MutableDataSet
+import icons.Icons
 import se.vidstige.jadb.*
 import java.awt.Dimension
 import java.io.File
 import java.net.ConnectException
 import java.net.InetSocketAddress
+import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
 import javax.swing.*
 import javax.swing.event.AncestorEvent
@@ -44,9 +53,12 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private var wifiIp3: JFormattedTextField? = null
   private var wifiIp4: JFormattedTextField? = null
   private var wifiPort: JFormattedTextField? = null
-  private var devicesContainer: JScrollPane? = null
-  private var adbPanel: JPanel? = null
   private var devices: JBTable? = null
+  private var toWiFi: JButton? = null
+  private var disconnect: JButton? = null
+  private val IP_REGEX = Regex(
+    "^(([0-9]{1,3}\\.){3})[0-9]{1,3}:[0-9]{1,5}\$"
+  )
 
   //display
   private var maxResolution: JFormattedTextField? = null
@@ -85,12 +97,27 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private var turnScreenOff: JCheckBox? = null
   private var renderExpiredFrames: JCheckBox? = null
   private var showTouches: JCheckBox? = null
+  private var preferText: JCheckBox? = null
+
+  //help and about
+  private var scrcpyButton: JButton? = null
+  private var scrcpyControllerButton: JButton? = null
+  private var shortcutsButton: JButton? = null
+  private var donateButton: JButton? = null
+
+  private val options = MutableDataSet().apply {
+    set(Parser.EXTENSIONS, listOf(TablesExtension.create()))
+  }
+  var parser = Parser.builder(options).build()
+  var renderer = HtmlRenderer.builder(options).build()
 
   private var run: JButton? = null
   private var stop: JButton? = null
 
   private var commandExecutors = ConcurrentHashMap<String, CommandExecutor>()
   private var allDevices = listOf<JadbDevice>()
+  private var toWifi = arrayListOf<String>()
+  private var toDisconnect = arrayListOf<String>()
   private var selectedDevices = arrayListOf<String>()
   private var dataListener = DeviceCheckListener()
 
@@ -112,11 +139,28 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
       try {
         selectedDevices.iterator().forEach {
           if (!commandExecutors.containsKey(it)) {
-            val cmd = CommandExecutor(props.buildCommand(it)) { exit, msg ->
+            val cmd = CommandExecutor(props.buildCommand(it)) { exit, msg, fullOp, ioe ->
               exit?.let { _ ->
                 commandExecutors.remove(it)
                 println("Exited: $exit")
                 loadDevices(false)
+                if (exit != 0) {
+                  val action = ScrcpyNotificationAction("View Error") { _, _ ->
+                    IOExceptionDialog("scrcpy error", fullOp).showAndGet()
+                    Unit
+                  }
+                  Notifier.notify("scrcpy failed", "An error occurred", NotificationType.ERROR, listOf(action))
+                }
+              }
+              if (ioe) {
+                commandExecutors.remove(it)
+                val notifMsg = if (props.scrcpyPath != null && !props.scrcpyPath.isNullOrEmpty()) "scrcpy was not found in the configured path" else "scrcpy path is not configured"
+                val actionText = if (props.scrcpyPath != null && !props.scrcpyPath.isNullOrEmpty()) "Re-configure" else "Configure"
+
+                val action = ScrcpyNotificationAction(actionText) { _, _ ->
+                  ShowSettingsUtil.getInstance().showSettingsDialog(null, ScrcpyControllerConfigurable::class.java)
+                }
+                Notifier.notify("scrcpy failed", notifMsg, NotificationType.ERROR, listOf(action))
               }
               msg?.let {
                 println(it)
@@ -202,15 +246,10 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
       props.recordingFileExtension = RecordingExtension.values()[fileExtension?.selectedIndex ?: 0]
     }
 
-    folder?.textField?.text = props.recordingPath
+    folder?.textField?.bindString(ScrcpyProps::recordingPath)
     folder?.addBrowseFolderListener(object : TextBrowseFolderListener(FileChooserDescriptor(false, true, false, false, false, false)) {
       override fun getInitialFile(): VirtualFile? {
         return if (props.recordingPath == null) null else LocalFileSystem.getInstance().findFileByIoFile(File(props.recordingPath))
-      }
-
-      override fun onFileChosen(chosenFile: VirtualFile) {
-        super.onFileChosen(chosenFile)
-        props.recordingPath = chosenFile.path
       }
     })
   }
@@ -242,6 +281,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     turnScreenOff.bind(ScrcpyProps::turnScreenOff)
     renderExpiredFrames.bind(ScrcpyProps::renderExpiredFrames)
     showTouches.bind(ScrcpyProps::showTouches)
+    preferText.bind(ScrcpyProps::preferText)
   }
 
   private fun initIpFields() {
@@ -279,31 +319,111 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   }
 
   private fun initButtons() {
+    scrcpyButton?.icon = Icons.GITHUB
+    scrcpyControllerButton?.icon = Icons.GITHUB
+    shortcutsButton?.icon = Icons.KEYBOARD
+    donateButton?.icon = Icons.COFFEE
+
+    scrcpyButton?.addActionListener {
+      BrowserUtil.browse("http://github.com/Genymobile/scrcpy")
+    }
+    scrcpyControllerButton?.addActionListener {
+      BrowserUtil.browse("http://github.com/shripal17/ScrcpyController")
+    }
+    shortcutsButton?.addActionListener {
+      try {
+        val scrcpy = URL("https://raw.githubusercontent.com/Genymobile/scrcpy/master/README.md").readText().split("## Shortcuts")[1].split("##")[0]
+        TextDialog("scrcpy Shortcuts", renderer.render(parser.parse(scrcpy)), true).showAndGet()
+      } catch (e: Exception) {
+        e.printStackTrace()
+        TextDialog("scrcpy Shortcuts", renderer.render(parser.parse(SHORTCUTS)), true).showAndGet()
+      }
+    }
+    donateButton?.addActionListener {
+      TextDialog("Scrcpy Controller - Donate", "UPI ID: <b>shripal17@okicici</b> (Shripal Jain)<br><br>Donation is currently available only for Indian users", true).showAndGet()
+    }
+
     wifiConnect?.addActionListener {
       if (props.isIpValid) {
         println("ip: ${props.ip}")
-        Thread {
-          try {
-            conn?.connectToTcpDevice(InetSocketAddress(props.ip, props.port!!))
-            loadDevices()
-          } catch (ce: ConnectException) {
-            ce.printStackTrace()
-            startAdbDaemon {
-              if (!it) {
-                Notifier.notify("scrcpy ADB Failed", "ADB initialization failed, please run adb manually", NotificationType.ERROR)
-              } else {
-                wifiConnect?.doClick()
-              }
-            }
-          } catch (ctrde: ConnectionToRemoteDeviceException) {
-            Notifier.notify("ADB WiFi Connect Failed", ctrde.localizedMessage, NotificationType.ERROR)
-          }
-        }.start()
+        connectAdbWifi(props.ip, props.port!!)
       }
     }
 
     devicesRefresh?.addActionListener {
       loadDevices(true)
+    }
+
+    disconnect?.addActionListener {
+      if (toDisconnect.isEmpty()) return@addActionListener
+      toDisconnect.forEach {
+        runInBg {
+          try {
+            val parts = it.split(":")
+            conn?.disconnectFromTcpDevice(InetSocketAddress(parts[0], parts[1].toInt()))
+          } catch (e: Exception) {
+            e.printStackTrace()
+          }
+        }
+      }
+      loadDevices()
+      toDisconnect.clear()
+      updateButtons()
+    }
+
+    toWiFi?.addActionListener {
+      if (toWifi.isEmpty()) return@addActionListener
+      toWifi.forEach { serial ->
+        runInBg {
+          try {
+            CommandExecutor(listOf("adb", "-s", serial, "tcpip", props.port?.toString() ?: "5555")) { exitCode, _, fullOp, ioe ->
+              exitCode?.let {
+                if (it != 0) {
+                  Notifier.notify(
+                    "ADB to WiFi Failed", "Could not switch device $it to WiFi", NotificationType.ERROR,
+                    listOf(ScrcpyNotificationAction("View Error") { _, _ ->
+                      IOExceptionDialog("scrcpy error", fullOp).showAndGet()
+                    })
+                  )
+                } else {
+                  CommandExecutor(listOf("adb", "-s", serial, "shell", "ip -f inet addr show wlan0")) { exitCode, _, fullOp, ioe ->
+                    exitCode?.let {
+                      if (it == 0 && fullOp != null) {
+                        val ip = fullOp.split("inet ")[1].split("/")[0]
+                        connectAdbWifi(ip, props.port ?: 5555)
+                      }
+                    }
+                  }.start()
+                }
+              }
+            }.start()
+          } catch (e: Exception) {
+            e.printStackTrace()
+          }
+        }
+      }
+      toWifi.clear()
+      updateButtons()
+    }
+  }
+
+  private fun connectAdbWifi(ip: String, port: Int) {
+    runInBg {
+      try {
+        conn?.connectToTcpDevice(InetSocketAddress(ip, port))
+        loadDevices()
+      } catch (ce: ConnectException) {
+        ce.printStackTrace()
+        startAdbDaemon {
+          if (!it) {
+            Notifier.notify("scrcpy ADB Failed", "ADB initialization failed, please run adb manually", NotificationType.ERROR)
+          } else {
+            wifiConnect?.doClick()
+          }
+        }
+      } catch (ctrde: ConnectionToRemoteDeviceException) {
+        Notifier.notify("ADB WiFi Connect Failed", ctrde.localizedMessage, NotificationType.ERROR)
+      }
     }
   }
 
@@ -317,18 +437,24 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     } catch (e: Exception) {
       e.printStackTrace()
       conn = null
-      Notifier.notify("scrcpy ADB Failed", "ADB initialization failed, please run adb manually", NotificationType.ERROR)
+      startAdbDaemon {
+        if (!it) {
+          Notifier.notify("scrcpy ADB Failed", "ADB initialization failed, please run adb manually", NotificationType.ERROR)
+        } else {
+          initAdb()
+        }
+      }
     }
   }
 
   private fun loadDevices(hardRefresh: Boolean = true) {
     try {
-      if (conn == null) return
-
-      if (hardRefresh || allDevices.isEmpty()) {
+      if ((hardRefresh || allDevices.isEmpty()) && conn != null) {
         allDevices = conn!!.devices
       }
       selectedDevices.clear()
+      toWifi.clear()
+      toDisconnect.clear()
 
       updateButtons()
 
@@ -350,9 +476,9 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
         }.also { it.addTableModelListener(dataListener) }
         setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
         columnModel.getColumn(0).apply {
-          preferredWidth = 50
-          maxWidth = 50
-          width = 50
+          preferredWidth = 60
+          maxWidth = 60
+          width = 60
         }
       }
       devices?.preferredScrollableViewportSize = Dimension(devices?.preferredSize?.width ?: 0, devices?.rowHeight ?: 0 * 3)
@@ -391,11 +517,26 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
       e?.let {
         if (e.firstRow == e.lastRow && e.column == 0 && e.source is TableModel) {
           val isChecked = (e.source as TableModel).getValueAt(e.firstRow, e.column) as Boolean
+          val c = allDevices[e.firstRow]
+          if (c.state != JadbDevice.State.Device) return@let
           val current = allDevices[e.firstRow].serial
           if (isChecked) {
             selectedDevices.add(current)
           } else if (selectedDevices.contains(current)) {
             selectedDevices.remove(current)
+          }
+          if (current.matches(IP_REGEX)) {
+            if (isChecked) {
+              toDisconnect.add(current)
+            } else {
+              toDisconnect.remove(current)
+            }
+          } else {
+            if (isChecked) {
+              toWifi.add(current)
+            } else {
+              toWifi.remove(current)
+            }
           }
           updateButtons()
         }
@@ -407,5 +548,16 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     val intersection = commandExecutors.keys().toList().intersect(selectedDevices)
     run?.isEnabled = selectedDevices.isNotEmpty() && intersection.isEmpty()
     stop?.isEnabled = selectedDevices.isNotEmpty() && intersection.isNotEmpty()
+    disconnect?.isEnabled = toDisconnect.isNotEmpty()
+    toWiFi?.isEnabled = toWifi.isNotEmpty()
+  }
+
+  @Throws(Exception::class)
+  private inline fun runInBg(crossinline toRun: () -> Unit) {
+    SwingUtilities.invokeLater {
+      Thread {
+        toRun()
+      }.start()
+    }
   }
 }

@@ -1,16 +1,17 @@
 package com.codertainment.scrcpy.controller.util
 
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.invokeLater
 import java.io.BufferedReader
-import java.io.File
+import java.io.IOException
 import java.io.InputStreamReader
-import java.util.concurrent.TimeUnit
 
 /*
  * Created by Shripal Jain
  * on 19/06/2020
  */
 
-class CommandExecutor(cmds: List<String>, dir: String? = null, private val onUpdate: (exitCode: Int?, output: String?) -> Unit) : Thread() {
+class CommandExecutor(cmds: List<String>, private val onUpdate: (exitCode: Int?, line: String?, fullOutput: String?, ioe: Boolean) -> Unit) : Thread() {
 
   init {
     println("Got Command: ${cmds.joinToString(" ")}")
@@ -20,25 +21,37 @@ class CommandExecutor(cmds: List<String>, dir: String? = null, private val onUpd
     redirectError(ProcessBuilder.Redirect.PIPE)
     redirectOutput(ProcessBuilder.Redirect.PIPE)
     redirectInput(ProcessBuilder.Redirect.PIPE)
-    dir?.let {
-      directory(File(it))
-    }
   }
 
   private var process: Process? = null
 
+  var output = StringBuilder()
+
   override fun run() {
     super.run()
-    process = processBuilder.start()
-    val reader = BufferedReader(InputStreamReader(process!!.inputStream))
-    var line: String? = ""
-    while (line != null) {
-      line = reader.readLine()
-      line?.let {
-        onUpdate(null, it)
+    try {
+      process = processBuilder.start()
+      val reader = BufferedReader(InputStreamReader(process!!.inputStream))
+      var line: String? = ""
+      while (line != null) {
+        line = reader.readLine()
+        line?.let {
+          output.append(it + "\n")
+          invokeLater(ModalityState.any()) {
+            onUpdate(null, line, null, false)
+          }
+        }
+      }
+      val exitCode = process!!.waitFor()
+      invokeLater(ModalityState.any()) {
+        onUpdate(exitCode, null, output.toString(), false)
+      }
+    } catch (io: IOException) {
+      io.printStackTrace()
+      invokeLater(ModalityState.any()) {
+        onUpdate(null, null, null, true)
       }
     }
-    onUpdate(process!!.waitFor(), null)
   }
 
   override fun interrupt() {

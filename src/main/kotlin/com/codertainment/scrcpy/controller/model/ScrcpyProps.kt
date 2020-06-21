@@ -14,6 +14,8 @@ import java.io.File
 
 @State(name = "com.codertainment.scrcpy.controller.model.ScrcpyProps", storages = [Storage("ScrcpyProps.xml")])
 data class ScrcpyProps(
+  var scrcpyPath: String? = null,
+
   //adb
   var ip1: Int? = 192, var ip2: Int? = 168, var ip3: Int? = null, var ip4: Int? = null, var port: Int? = 5555,
 
@@ -33,7 +35,7 @@ data class ScrcpyProps(
   var enableRecording: Boolean = false,
   var recordingPath: String? = null,
   var recordingFileName: String? = null,
-  var recordingFileExtension: RecordingExtension = RecordingExtension.mp4,
+  var recordingFileExtension: RecordingExtension = RecordingExtension.mkv,
   var disableMirroring: Boolean = false,
 
   //window
@@ -53,7 +55,18 @@ data class ScrcpyProps(
   var stayAwake: Boolean = false,
   var turnScreenOff: Boolean = false,
   var renderExpiredFrames: Boolean = false,
-  var showTouches: Boolean = false
+  var showTouches: Boolean = false,
+  var preferText: Boolean = false,
+
+  //advanced
+  var forceAdbForward: Boolean = false,
+  var noMipmaps: Boolean = false,
+  var startPort: Int? = null,
+  var endPort: Int? = null,
+  var pushTarget: String? = null,
+  var renderDriver: RenderDriver = RenderDriver.Auto,
+  var verbosity: Verbosity = Verbosity.Info,
+  var displayId: Int? = null
 ) : PersistentStateComponent<ScrcpyProps> {
 
   companion object {
@@ -68,7 +81,21 @@ data class ScrcpyProps(
   val isIpValid get() = ip1 != null && ip2 != null && ip3 != null && ip4 != null && port != null
   val ip get() = listOf(ip1, ip2, ip3, ip4).joinToString(".")
 
-  fun buildCommand(serial: String) = arrayListOf("scrcpy").apply {
+  fun pathTestCommand() = arrayListOf<String>().apply {
+    if (scrcpyPath != null) {
+      add(scrcpyPath + File.separator + "scrcpy")
+    } else {
+      add("scrcpy")
+    }
+    add("-v")
+  }
+
+  fun buildCommand(serial: String) = arrayListOf<String>().apply {
+    if (scrcpyPath != null) {
+      add(scrcpyPath + File.separator + "scrcpy")
+    } else {
+      add("scrcpy")
+    }
     add("-s")
     add(serial)
 
@@ -168,6 +195,36 @@ data class ScrcpyProps(
     if (showTouches) {
       add("-t")
     }
+    if (preferText) {
+      add("--prefer-text")
+    }
+
+    if (forceAdbForward) {
+      add("--force-adb-forward")
+    }
+    if (noMipmaps) {
+      add("--no-mipmaps")
+    }
+    if (startPort != null) {
+      add("--port")
+      add("$startPort${if (endPort != null) ":$endPort" else ""}")
+    }
+    if (pushTarget != null) {
+      add("--push-target")
+      add(pushTarget!!)
+    }
+    if (renderDriver != RenderDriver.Auto) {
+      add("--render-driver")
+      add(renderDriver.name)
+    }
+    if (verbosity != Verbosity.Info) {
+      add("--verbosity")
+      add(verbosity.name.toLowerCase())
+    }
+    if (displayId != null) {
+      add("--display")
+      add(displayId.toString())
+    }
   }
 }
 
@@ -180,7 +237,7 @@ enum class VideoOrientation(val value: Int? = null) {
 }
 
 enum class RecordingExtension {
-  mp4, mkv
+  mkv, mp4
 }
 
 enum class BitRateUnit {
@@ -194,4 +251,10 @@ enum class Rotation(val value: Int? = null) {
   LandscapeReverse(3)
 }
 
+enum class RenderDriver {
+  Auto, direct3d, opengl, opengles2, opengles, metal, software
+}
 
+enum class Verbosity {
+  Debug, Info, Warn, Error
+}

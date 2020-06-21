@@ -25,22 +25,34 @@ repositories {
     maven { url "https://jitpack.io" }
     jcenter()
 }
-
-
-group  "com.codertainment"
-version "1.0-SNAPSHOT"
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+group "com.codertainment"
+version "0.0.1"
 
 intellij {
     pluginName 'Scrcpy Controller'
     updateSinceUntilBuild false
 
-    intellij.localPath = project.hasProperty("StudioRunPath") ? StudioRunPath : StudioCompilePath
+    //intellij.localPath = project.hasProperty("StudioRunPath") ? StudioRunPath : StudioCompilePath
 }
-
+patchPluginXml {
+    changeNotes """
+        <b>v0.0.1</b>: Initial Release
+    """
+}
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
     implementation "com.github.vidstige:jadb:v1.1.0"
+
+    def flexmarkVersion = '0.62.2'
+    implementation "com.vladsch.flexmark:flexmark:$flexmarkVersion"
+    implementation "com.vladsch.flexmark:flexmark-java:$flexmarkVersion"
+    implementation "com.vladsch.flexmark:flexmark-ext-tables:$flexmarkVersion"
 }

@@ -1,4 +1,4 @@
-package com.codertainment.scrcpy.controller
+package com.codertainment.scrcpy.controller.ui
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
@@ -13,7 +13,7 @@ import com.intellij.ui.content.ContentFactory
 class ScrcpyToolWindowFactory : ToolWindowFactory {
   override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
     val controller = ScrcpyController(toolWindow)
-    val content = ContentFactory.SERVICE.getInstance().createContent(controller.mainPanel, "scrcpy controller", false)
+    val content = ContentFactory.SERVICE.getInstance().createContent(controller.mainPanel, "Controller", false)
     toolWindow.contentManager.addContent(content)
   }
 }

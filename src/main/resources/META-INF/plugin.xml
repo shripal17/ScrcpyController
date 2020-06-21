@@ -1,19 +1,24 @@
 <idea-plugin>
-    <id>com.codertainment.scrcpy</id>
-    <name>scrcpy</name>
-    <vendor email="shripal17@gmail.com" url="https://github.com/shripal17">Codertainment</vendor>
+  <id>com.codertainment.scrcpy</id>
+  <name>scrcpy</name>
+  <vendor email="shripal17@gmail.com" url="https://github.com/shripal17">Codertainment</vendor>
 
-    <description><![CDATA[
+  <description><![CDATA[
     Provides options for running scrcpy directly from IntelliJ IDEA/Android Studio
     ]]></description>
 
-    <!-- please see https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
-         on how to target different products -->
-    <depends>com.intellij.modules.platform</depends>
+  <!-- please see https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+       on how to target different products -->
+  <depends>com.intellij.modules.platform</depends>
 
-    <extensions defaultExtensionNs="com.intellij">
-      <toolWindow id="scrcpy" anchor="right" factoryClass="com.codertainment.scrcpy.controller.ScrcpyToolWindowFactory" icon="/toolWindowIcon.svg"/>
-      <applicationService serviceImplementation="com.codertainment.scrcpy.controller.model.ScrcpyProps" />
-    </extensions>
-    <idea-version since-build="191"/>
+  <extensions defaultExtensionNs="com.intellij">
+    <toolWindow
+      anchor="right" canCloseContents="false" factoryClass="com.codertainment.scrcpy.controller.ui.ScrcpyToolWindowFactory" icon="/toolWindowIcon.svg" id="scrcpy"/>
+    <applicationService
+      serviceImplementation="com.codertainment.scrcpy.controller.model.ScrcpyProps"/>
+    <applicationConfigurable
+      displayName="Scrcpy Controller" id="com.codertainment.scrcpy.controller.ui.ScrcpyControllerConfigurable" instance="com.codertainment.scrcpy.controller.ui.ScrcpyControllerConfigurable"
+      parentId="tools"/>
+  </extensions>
+  <idea-version since-build="193.4099.13"/>
 </idea-plugin>
