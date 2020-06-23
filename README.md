@@ -30,6 +30,7 @@ I am an Android Developer myself and I always use scrcpy ❤ to test my work on 
     1. Restarting adbd in tcpip mode (uses the port entered in `ADB WiFi` section or `5555` (default))
     2. Extract device's local WiFi IP and run's `adb connect` on the extracted IP
 - You can configure advanced, rarely-used options for scrcpy from IDE Settings -> Tools -> Scrcpy Controller
+- Devices with `scrcpy` currently running have a `•` added to their serial
 
 ## Screenshots
 | Main Tool Window | Settings | Shortcuts dialog |
