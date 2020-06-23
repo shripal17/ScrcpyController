@@ -52,7 +52,7 @@ I am an Android Developer myself and I always use scrcpy ❤ to test my work on 
 
 ## Donate
 - This project would not have been possible without scrcpy (of course)!
-- I've spent endless nights making this plugin work well! If you liked my work, consider donating me via [UPI (ID: `shripal17@okicici`, Shripal Jain)](https://kutt.it/shripal17UPI) (works only in India) or [PayPal
+- I've spent endless nights making this plugin work well! If you liked my work, consider donating me via [UPI (ID: `shripal17@okicici`, Shripal Jain)](https://kutt.it/shripal17UPI) (works only in India, open link in smartphone) or [PayPal
 ](https://paypal.me/shripaul17)
 
 ## License
