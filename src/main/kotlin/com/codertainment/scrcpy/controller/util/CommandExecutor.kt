@@ -11,7 +11,7 @@ import java.io.InputStreamReader
  * on 19/06/2020
  */
 
-class CommandExecutor(cmds: List<String>, private val onUpdate: (exitCode: Int?, line: String?, fullOutput: String?, ioe: Boolean) -> Unit) : Thread() {
+class CommandExecutor(cmds: List<String>, var modalityState: ModalityState? = null, private val onUpdate: (exitCode: Int?, line: String?, fullOutput: String?, ioe: Boolean) -> Unit) : Thread() {
 
   init {
     println("Got Command: ${cmds.joinToString(" ")}")
@@ -21,6 +21,7 @@ class CommandExecutor(cmds: List<String>, private val onUpdate: (exitCode: Int?,
     redirectError(ProcessBuilder.Redirect.PIPE)
     redirectOutput(ProcessBuilder.Redirect.PIPE)
     redirectInput(ProcessBuilder.Redirect.PIPE)
+    redirectErrorStream(true)
   }
 
   private var process: Process? = null
@@ -30,25 +31,28 @@ class CommandExecutor(cmds: List<String>, private val onUpdate: (exitCode: Int?,
   override fun run() {
     super.run()
     try {
+      var line: String? = ""
       process = processBuilder.start()
       val reader = BufferedReader(InputStreamReader(process!!.inputStream))
-      var line: String? = ""
-      while (line != null) {
-        line = reader.readLine()
-        line?.let {
-          output.append(it + "\n")
-          invokeLater(ModalityState.any()) {
-            onUpdate(null, line, null, false)
+      Thread {
+        while (line != null) {
+          line = reader.readLine()
+          line?.let {
+            println(it)
+            output.append(it + "\n")
+            invokeLater(modalityState) {
+              onUpdate(null, line, null, false)
+            }
           }
         }
-      }
+      }.start()
       val exitCode = process!!.waitFor()
-      invokeLater(ModalityState.any()) {
+      invokeLater(modalityState) {
         onUpdate(exitCode, null, output.toString(), false)
       }
     } catch (io: IOException) {
       io.printStackTrace()
-      invokeLater(ModalityState.any()) {
+      invokeLater(modalityState) {
         onUpdate(null, null, null, true)
       }
     }

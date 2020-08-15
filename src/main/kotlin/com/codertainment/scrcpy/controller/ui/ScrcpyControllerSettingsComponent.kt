@@ -7,6 +7,7 @@ import com.codertainment.scrcpy.controller.util.CommandExecutor
 import com.codertainment.scrcpy.controller.util.intOrNull
 import com.codertainment.scrcpy.controller.util.numberFormatter
 import com.codertainment.scrcpy.controller.util.onTextChangedListener
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.ui.TextBrowseFolderListener
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
@@ -36,6 +37,7 @@ internal class ScrcpyControllerSettingsComponent {
   private var renderDriver: JComboBox<String>? = null
   private var verbosity: JComboBox<String>? = null
   private var displayId: JFormattedTextField? = null
+  private var shortcutMod: JFormattedTextField? = null
 
   init {
     scrcpyPath?.addBrowseFolderListener(object : TextBrowseFolderListener(FileChooserDescriptor(false, true, false, false, false, false)) {
@@ -61,12 +63,19 @@ internal class ScrcpyControllerSettingsComponent {
 
     displayId?.bindNumber(9, ScrcpyProps::displayId)
 
+    shortcutMod?.bindString(ScrcpyProps::shortcutMod)
+
     pathTest?.addActionListener {
-      CommandExecutor(modProps.pathTestCommand()) { e, _, fullOp, ioe ->
+      CommandExecutor(modProps.pathTestCommand(), ModalityState.current()) { e, _, fullOp, ioe ->
         if (ioe) {
           TextDialog("Path Invalid", "Provided path does not contain scrcpy executable", false).showAndGet()
         } else if (e != null) {
-          TextDialog("Path Valid", "Path is valid", false).showAndGet()
+          val output = if (fullOp != null) {
+            "scrcpy Path is valid<br><br>Version Info:<br>${fullOp.replace("\n", "<br>")}"
+          } else {
+            "Path is valid"
+          }
+          TextDialog("Path Valid", output, false).showAndGet()
         }
       }.start()
     }
@@ -81,6 +90,7 @@ internal class ScrcpyControllerSettingsComponent {
     endPort?.text = modProps.endPort?.toString() ?: ""
     pushTarget?.text = modProps.pushTarget ?: ""
     displayId?.text = modProps.displayId?.toString() ?: ""
+    shortcutMod?.text = modProps.shortcutMod ?: ""
 
     renderDriver?.selectedIndex = RenderDriver.values().indexOf(modProps.renderDriver)
     verbosity?.selectedIndex = Verbosity.values().indexOf(modProps.verbosity)

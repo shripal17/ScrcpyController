@@ -98,6 +98,8 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private var renderExpiredFrames: JCheckBox? = null
   private var showTouches: JCheckBox? = null
   private var preferText: JCheckBox? = null
+  private var disableScreenSaver: JCheckBox? = null
+  private var disableKeyRepeat: JCheckBox? = null
 
   //help and about
   private var scrcpyButton: JButton? = null
@@ -166,8 +168,8 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
                 println(it)
               }
             }
-            cmd.start()
             commandExecutors[it] = cmd
+            cmd.start()
             loadDevices(false)
           }
         }
@@ -282,6 +284,8 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     renderExpiredFrames.bind(ScrcpyProps::renderExpiredFrames)
     showTouches.bind(ScrcpyProps::showTouches)
     preferText.bind(ScrcpyProps::preferText)
+    disableScreenSaver.bind(ScrcpyProps::disableScreenSaver)
+    disableKeyRepeat.bind(ScrcpyProps::disableKeyRepeat)
   }
 
   private fun initIpFields() {
@@ -340,7 +344,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
       }
     }
     donateButton?.addActionListener {
-      TextDialog("Scrcpy Controller - Donate", "UPI ID: <b>shripal17@okicici</b> (Shripal Jain)<br><br>Donation is currently available only for Indian users", true).showAndGet()
+      TextDialog("Scrcpy Controller - Donate", "UPI (India only) ID: <b>shripal17@okicici</b> (Shripal Jain)<br>PayPal: <a href=\"https://paypal.me/shripaul17\">https://paypal.me/shripaul17</a>", true).showAndGet()
     }
 
     wifiConnect?.addActionListener {
@@ -360,15 +364,15 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
         runInBg {
           try {
             val parts = it.split(":")
-            conn?.disconnectFromTcpDevice(InetSocketAddress(parts[0], parts[1].toInt()))
+            conn?.disconnectFromTcpDevice(InetSocketAddress(parts[0], parts.getOrNull(1)?.toInt() ?: 5555))
+            loadDevices()
+            toDisconnect.clear()
+            updateButtons()
           } catch (e: Exception) {
             e.printStackTrace()
           }
         }
       }
-      loadDevices()
-      toDisconnect.clear()
-      updateButtons()
     }
 
     toWiFi?.addActionListener {
@@ -386,6 +390,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
                     })
                   )
                 } else {
+                  Thread.sleep(1500)
                   CommandExecutor(listOf("adb", "-s", serial, "shell", "ip -f inet addr show wlan0")) { exitCode, _, fullOp, ioe ->
                     exitCode?.let {
                       if (it == 0 && fullOp != null) {
@@ -491,6 +496,9 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
           loadDevices()
         }
       }
+    } catch (jadbe: JadbException) {
+      jadbe.printStackTrace()
+      Notifier.notify("ADB Error", jadbe.localizedMessage ?: "Something went wrong", NotificationType.ERROR)
     }
   }
 

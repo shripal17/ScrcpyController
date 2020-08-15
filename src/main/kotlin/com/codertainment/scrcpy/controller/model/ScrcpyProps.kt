@@ -57,6 +57,8 @@ data class ScrcpyProps(
   var renderExpiredFrames: Boolean = false,
   var showTouches: Boolean = false,
   var preferText: Boolean = false,
+  var disableScreenSaver: Boolean = false,
+  var disableKeyRepeat: Boolean = false,
 
   //advanced
   var forceAdbForward: Boolean = false,
@@ -66,7 +68,8 @@ data class ScrcpyProps(
   var pushTarget: String? = null,
   var renderDriver: RenderDriver = RenderDriver.Auto,
   var verbosity: Verbosity = Verbosity.Info,
-  var displayId: Int? = null
+  var displayId: Int? = null,
+  var shortcutMod: String? = null
 ) : PersistentStateComponent<ScrcpyProps> {
 
   companion object {
@@ -198,6 +201,12 @@ data class ScrcpyProps(
     if (preferText) {
       add("--prefer-text")
     }
+    if (disableScreenSaver) {
+      add("--disable-screensaver")
+    }
+    if (disableKeyRepeat) {
+      add("--no-key-repeat")
+    }
 
     if (forceAdbForward) {
       add("--force-adb-forward")
@@ -224,6 +233,10 @@ data class ScrcpyProps(
     if (displayId != null) {
       add("--display")
       add(displayId.toString())
+    }
+    if (shortcutMod != null) {
+      add("--shortcut-mod")
+      add(shortcutMod!!)
     }
   }
 }

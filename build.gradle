@@ -31,7 +31,7 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     }
 }
 group "com.codertainment"
-version "0.0.1"
+version "0.1.0"
 
 intellij {
     pluginName 'Scrcpy Controller'
@@ -41,6 +41,15 @@ intellij {
 }
 patchPluginXml {
     changeNotes """
+        <b>v0.1.0</b>: <br>
+        <ul>
+            <li>Added support for "Disable Screensaver" and "Disable repeated keys forward" from scrcpy v1.16</li>
+            <li>Added setting for "Shortcut Modifier" in 'Advanced Settings Menu'</li>
+            <li>Show scrcpy version info when testing scrcpy path from 'Advanced Settings Menu'</li>
+            <li>Fix USB to WiFi not working</li>
+            <li>Fix few more bugs</li>
+         </ul>
+        <br>
         <b>v0.0.1</b>: Initial Release
     """
 }
