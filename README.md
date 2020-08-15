@@ -10,9 +10,10 @@ I am an Android Developer myself and I always use scrcpy ❤ to test my work on 
 - Run scrcpy on multiple devices effortlessly
 - Disconnect WiFi Devices
 - Connect WiFi Devices
-- All options from [scrcpy](https://github.com/Genymobile/scrcpy) are configurable from the UI
+- All options from [scrcpy v1.16](https://github.com/Genymobile/scrcpy) are configurable from the UI
 - Quick *Shortcuts* button for you to remember scrcpy shortcuts
 - Easy installation, scrcpy does not need to be added in your system's PATH Variable
+- *Shortcuts* are directly loaded from scrcpy's GitHub README if you are connected to the internet, else static shortcuts are loaded from scrcpy v1.16
 
 ## Requirements
 1. Works on Android Studio 4.0+ and other IntelliJ-based IDEs with build number `193.4099.13` and above 
@@ -30,6 +31,7 @@ I am an Android Developer myself and I always use scrcpy ❤ to test my work on 
     1. Restarting adbd in tcpip mode (uses the port entered in `ADB WiFi` section or `5555` (default))
     2. Extract device's local WiFi IP and run's `adb connect` on the extracted IP
 - You can configure advanced, rarely-used options for scrcpy from IDE Settings -> Tools -> Scrcpy Controller
+- Devices with `scrcpy` currently running have a `•` added to their serial
 
 ## Screenshots
 | Main Tool Window | Settings | Shortcuts dialog |
@@ -44,6 +46,7 @@ I am an Android Developer myself and I always use scrcpy ❤ to test my work on 
 - If you use the plugin's stop button to terminate an active scrcpy recording session with `mp4` extension, the `mp4` file is not playable. This is being caused by Java's `Process` not interrupting scrcpy session
  properly. Similar issue exists with `mkv` extension, although the `mkv` file can be played properly, it is not seekable.<br>
  Workaround: Close the scrcpy session with the window's close button
+- [jadb](https://github.com/vidstige/jadb) throws an exception if any connected device becomes offline, hence devices list is not refreshed
 
 ## Roadmap
 - [ ] Provide better UI/UX
@@ -52,7 +55,7 @@ I am an Android Developer myself and I always use scrcpy ❤ to test my work on 
 
 ## Donate
 - This project would not have been possible without scrcpy (of course)!
-- I've spent endless nights making this plugin work well! If you liked my work, consider donating me via [UPI (ID: `shripal17@okicici`, Shripal Jain)](https://kutt.it/shripal17UPI) (works only in India) or [PayPal
+- I've spent endless nights making this plugin work well! If you liked my work, consider donating me via [UPI (ID: `shripal17@okicici`, Shripal Jain)](https://kutt.it/shripal17UPI) (works only in India, open link in smartphone) or [PayPal
 ](https://paypal.me/shripaul17)
 
 ## License
