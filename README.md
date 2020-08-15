@@ -22,7 +22,13 @@ I am an Android Developer myself and I always use scrcpy ❤ to test my work on 
  to be executable from cmd/bash in any directory
 
 ## Installation
-1. Download and extract [scrcpy]() to any folder of your choice
+Install the plugin in Android Studio/IntelliJ-based IDE via:
+#### JetBrains Plugins Marketplace
+   - Search for 'scrcpy Controller', install, and restart IDE
+#### Manually
+   - Download latest plugin zip (should contain latest version in file name e.g. 0.1.0) from [releases](https://github.com/shripal17/ScrcpyController/releases/latest)
+   - From Android Studio/IntelliJ-based IDE, open Settings -> Plugins -> Settings Icon -> Install plugin from disk and select the downloaded plugin zip -> Restart IDE
+1. Download and extract [scrcpy](https://github.com/Genymobile/scrcpy) to any folder of your choice
 2. Go to IDE Settings -> Tools -> Scrcpy Controller -> Enter/choose the location of the previously extracted scrcpy release -> Click on *Test* button to verify selected/entered path -> *Ok* button
 
 ## Bonus
