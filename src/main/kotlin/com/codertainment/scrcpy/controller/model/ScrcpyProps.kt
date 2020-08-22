@@ -223,8 +223,7 @@ data class ScrcpyProps(
       add(pushTarget!!)
     }
     if (renderDriver != RenderDriver.Auto) {
-      add("--render-driver")
-      add(renderDriver.name)
+      add("--render-driver=${renderDriver.name}")
     }
     if (verbosity != Verbosity.Info) {
       add("--verbosity")
@@ -235,8 +234,7 @@ data class ScrcpyProps(
       add(displayId.toString())
     }
     if (shortcutMod != null) {
-      add("--shortcut-mod")
-      add(shortcutMod!!)
+      add("--shortcut-mod=$shortcutMod")
     }
   }
 }

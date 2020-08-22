@@ -380,7 +380,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
       toWifi.forEach { serial ->
         runInBg {
           try {
-            CommandExecutor(listOf("adb", "-s", serial, "tcpip", props.port?.toString() ?: "5555")) { exitCode, _, fullOp, ioe ->
+            CommandExecutor(listOf("adb", "-s", serial, "tcpip", props.port?.toString() ?: "5555")) { exitCode, _, fullOp, _ ->
               exitCode?.let {
                 if (it != 0) {
                   Notifier.notify(
@@ -391,7 +391,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
                   )
                 } else {
                   Thread.sleep(1500)
-                  CommandExecutor(listOf("adb", "-s", serial, "shell", "ip -f inet addr show wlan0")) { exitCode, _, fullOp, ioe ->
+                  CommandExecutor(listOf("adb", "-s", serial, "shell", "ip -f inet addr show wlan0")) { exitCode, _, fullOp, _ ->
                     exitCode?.let {
                       if (it == 0 && fullOp != null) {
                         val ip = fullOp.split("inet ")[1].split("/")[0]

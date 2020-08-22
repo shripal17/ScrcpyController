@@ -1,6 +1,6 @@
 buildscript {
 
-    ext.kotlin_version = '1.3.72'
+    ext.kotlin_version = '1.4.0'
 
     repositories {
         mavenCentral()
@@ -31,16 +31,18 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     }
 }
 group "com.codertainment"
-version "0.1.0"
+version "0.1.1"
 
 intellij {
     pluginName 'Scrcpy Controller'
     updateSinceUntilBuild false
+    // version 'IU-2020.2'
 
     //intellij.localPath = project.hasProperty("StudioRunPath") ? StudioRunPath : StudioCompilePath
 }
 patchPluginXml {
     changeNotes """
+        <b>v0.1.1</b>: Fix Shortcut MOD setting not working<br>
         <b>v0.1.0</b>: <br>
         <ul>
             <li>Added support for "Disable Screensaver" and "Disable repeated keys forward" from scrcpy v1.16</li>
