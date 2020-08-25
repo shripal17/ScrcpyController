@@ -31,17 +31,18 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     }
 }
 group "com.codertainment"
-version "0.1.1"
+version "0.1.2"
 
 intellij {
     pluginName 'Scrcpy Controller'
     updateSinceUntilBuild false
-    // version 'IU-2020.2'
+    version 'IU-2020.2.1'
 
     //intellij.localPath = project.hasProperty("StudioRunPath") ? StudioRunPath : StudioCompilePath
 }
 patchPluginXml {
     changeNotes """
+        <b>v0.1.2</b>: Really fix shortcut MOD setting not working (this time I've tested it :P)<br>
         <b>v0.1.1</b>: Fix Shortcut MOD setting not working<br>
         <b>v0.1.0</b>: <br>
         <ul>

@@ -109,6 +109,7 @@ internal class ScrcpyControllerSettingsComponent {
       props.displayId = displayId
       props.renderDriver = renderDriver
       props.verbosity = verbosity
+      props.shortcutMod = shortcutMod
     }
   }
 
