@@ -17,9 +17,7 @@ I am an Android Developer myself and I always use scrcpy ❤ to test my work on 
 
 ## Requirements
 1. Works on Android Studio 4.0+ and other IntelliJ-based IDEs with build number `193.4099.13` and above 
-2. [ADB](https://developer.android.com/studio/releases/platform-tools) must be [installed](https://www.xda-developers.com/adb-fastboot-any-directory-windows-linux/) and configured
- properly in PATH as
- to be executable from cmd/bash in any directory
+2. `adb` and `scrcpy` installed (need not be configured in `PATH`)
 
 ## Installation
 Install the plugin in Android Studio/IntelliJ-based IDE via:
@@ -44,6 +42,11 @@ Install the plugin in Android Studio/IntelliJ-based IDE via:
 |----------------|---------------------|-------------------|
 | ![Main Tool Window](/screens/main.png?raw=true) | ![Settings](/screens/settings.png?raw=true) | ![Shortcuts Dialog](/screens/shortcuts.png?raw=true) |
 
+##### Path Testers
+| ADB Tester | scrcpy Tester |
+|------------|---------------|
+|![ADB Tester](/screens/adb_test.png?raw=true)| ![scrcpy Tester](/screens/scrcpy_test.png?raw=true)|
+ 
 ## Contributing
 - Feel free to make a PR for feature additions/bugs
 - This repository follows Google (2-space indents) coding style, so please keep this in mind while making PRs
@@ -61,7 +64,8 @@ Install the plugin in Android Studio/IntelliJ-based IDE via:
 
 ## Donate
 - This project would not have been possible without scrcpy (of course)!
-- I've spent endless nights making this plugin work well! If you liked my work, consider donating me via [UPI (ID: `shripal17@okicici`, Shripal Jain)](https://kutt.it/shripal17UPI) (works only in India, open link in smartphone) or [PayPal
+- I've spent endless nights making this plugin work well! If you liked my work, consider donating me via [UPI (ID: `shripal17@okaxis`, Shripal Jain)](https://kutt.it/shripal17UPI) (works only in India, open link in
+ smartphone) or [PayPal
 ](https://paypal.me/shripaul17)
 
 ## License

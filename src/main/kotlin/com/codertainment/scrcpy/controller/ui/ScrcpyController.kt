@@ -39,6 +39,7 @@ typealias StringProp = KMutableProperty1<ScrcpyProps, String?>
 typealias BooleanProp = KMutableProperty1<ScrcpyProps, Boolean>
 
 internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDetectionListener {
+
   private var props = ScrcpyProps.getInstance()
   var mainPanel: JPanel? = null
 
@@ -156,7 +157,8 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
               }
               if (ioe) {
                 commandExecutors.remove(it)
-                val notifMsg = if (props.scrcpyPath != null && !props.scrcpyPath.isNullOrEmpty()) "scrcpy was not found in the configured path" else "scrcpy path is not configured"
+                val notifMsg =
+                  if (props.scrcpyPath != null && !props.scrcpyPath.isNullOrEmpty()) "scrcpy was not found in the configured path" else "scrcpy path is not configured"
                 val actionText = if (props.scrcpyPath != null && !props.scrcpyPath.isNullOrEmpty()) "Re-configure" else "Configure"
 
                 val action = ScrcpyNotificationAction(actionText) { _, _ ->
@@ -344,7 +346,11 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
       }
     }
     donateButton?.addActionListener {
-      TextDialog("Scrcpy Controller - Donate", "UPI (India only) ID: <b>shripal17@okicici</b> (Shripal Jain)<br>PayPal: <a href=\"https://paypal.me/shripaul17\">https://paypal.me/shripaul17</a>", true).showAndGet()
+      TextDialog(
+        "Scrcpy Controller - Donate",
+        "UPI (India only) ID: <b>shripal17@okaxis</b> (Shripal Jain)<br>PayPal: <a href=\"https://paypal.me/shripaul17\">https://paypal.me/shripaul17</a>",
+        true
+      ).showAndGet()
     }
 
     wifiConnect?.addActionListener {
@@ -521,6 +527,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   }
 
   inner class DeviceCheckListener : TableModelListener {
+
     override fun tableChanged(e: TableModelEvent?) {
       e?.let {
         if (e.firstRow == e.lastRow && e.column == 0 && e.source is TableModel) {
