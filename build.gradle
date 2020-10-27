@@ -1,6 +1,6 @@
 buildscript {
 
-    ext.kotlin_version = '1.4.0'
+    ext.kotlin_version = '1.4.10'
 
     repositories {
         mavenCentral()
@@ -31,17 +31,18 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     }
 }
 group "com.codertainment"
-version "0.1.2"
+version "0.1.3"
 
 intellij {
     pluginName 'Scrcpy Controller'
     updateSinceUntilBuild false
-    version 'IU-2020.2.1'
+    version 'IU-2020.2.3'
 
     //intellij.localPath = project.hasProperty("StudioRunPath") ? StudioRunPath : StudioCompilePath
 }
 patchPluginXml {
     changeNotes """
+        <b>v0.1.3</b>: Add option to set adb path (use only if scrcpy can't detect ADB Path) (maybe necessary for macOS)<br>
         <b>v0.1.2</b>: Really fix shortcut MOD setting not working (this time I've tested it :P)<br>
         <b>v0.1.1</b>: Fix Shortcut MOD setting not working<br>
         <b>v0.1.0</b>: <br>

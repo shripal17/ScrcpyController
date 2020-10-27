@@ -15,6 +15,7 @@ import java.io.File
 @State(name = "com.codertainment.scrcpy.controller.model.ScrcpyProps", storages = [Storage("ScrcpyProps.xml")])
 data class ScrcpyProps(
   var scrcpyPath: String? = null,
+  var adbPath: String? = null,
 
   //adb
   var ip1: Int? = 192, var ip2: Int? = 168, var ip3: Int? = null, var ip4: Int? = null, var port: Int? = 5555,
@@ -84,14 +85,7 @@ data class ScrcpyProps(
   val isIpValid get() = ip1 != null && ip2 != null && ip3 != null && ip4 != null && port != null
   val ip get() = listOf(ip1, ip2, ip3, ip4).joinToString(".")
 
-  fun pathTestCommand() = arrayListOf<String>().apply {
-    if (scrcpyPath != null) {
-      add(scrcpyPath + File.separator + "scrcpy")
-    } else {
-      add("scrcpy")
-    }
-    add("-v")
-  }
+  fun adbPath() = adbPath ?: "adb"
 
   fun buildCommand(serial: String) = arrayListOf<String>().apply {
     if (scrcpyPath != null) {

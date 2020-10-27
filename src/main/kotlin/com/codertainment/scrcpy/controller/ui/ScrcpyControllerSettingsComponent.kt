@@ -27,7 +27,9 @@ internal class ScrcpyControllerSettingsComponent {
 
   var settingsPanel: JPanel? = null
   private var scrcpyPath: TextFieldWithBrowseButton? = null
+  private var adbPath: TextFieldWithBrowseButton? = null
   private var pathTest: JButton? = null
+  private var adbTest: JButton? = null
 
   private var forceAdbForward: JCheckBox? = null
   private var noMipmaps: JCheckBox? = null
@@ -45,7 +47,13 @@ internal class ScrcpyControllerSettingsComponent {
         return if (modProps.scrcpyPath == null) null else LocalFileSystem.getInstance().findFileByIoFile(File(modProps.scrcpyPath))
       }
     })
+    adbPath?.addBrowseFolderListener(object : TextBrowseFolderListener(FileChooserDescriptor(true, false, false, false, false, false)) {
+      override fun getInitialFile(): VirtualFile? {
+        return if (modProps.scrcpyPath == null) null else LocalFileSystem.getInstance().findFileByIoFile(File(modProps.adbPath))
+      }
+    })
     scrcpyPath?.textField?.bindString(ScrcpyProps::scrcpyPath)
+    adbPath?.textField?.bindString(ScrcpyProps::adbPath)
     forceAdbForward?.bind(ScrcpyProps::forceAdbForward)
     noMipmaps?.bind(ScrcpyProps::noMipmaps)
 
@@ -66,7 +74,7 @@ internal class ScrcpyControllerSettingsComponent {
     shortcutMod?.bindString(ScrcpyProps::shortcutMod)
 
     pathTest?.addActionListener {
-      CommandExecutor(modProps.pathTestCommand(), ModalityState.current()) { e, _, fullOp, ioe ->
+      CommandExecutor(pathTestCommand(), modalityState = ModalityState.current()) { e, _, fullOp, ioe ->
         if (ioe) {
           TextDialog("Path Invalid", "Provided path does not contain scrcpy executable", false).showAndGet()
         } else if (e != null) {
@@ -79,11 +87,26 @@ internal class ScrcpyControllerSettingsComponent {
         }
       }.start()
     }
+    adbTest?.addActionListener {
+      CommandExecutor(adbTestCommand(), modalityState = ModalityState.current()) { e, _, fullOp, ioe ->
+        if (ioe) {
+          TextDialog("Invalid Executable", "Provided path does not contain adb executable", false).showAndGet()
+        } else if (e != null) {
+          val output = if (fullOp != null) {
+            "adb executable is valid<br><br>Version Info:<br>${fullOp.replace("\n", "<br>")}"
+          } else {
+            "Valid executable"
+          }
+          TextDialog("Valid executable", output, false).showAndGet()
+        }
+      }.start()
+    }
   }
 
   fun init() {
     modProps = props.copy()
     scrcpyPath?.textField?.text = modProps.scrcpyPath ?: ""
+    adbPath?.textField?.text = modProps.adbPath ?: ""
     forceAdbForward?.isSelected = modProps.forceAdbForward
     noMipmaps?.isSelected = modProps.noMipmaps
     startPort?.text = modProps.startPort?.toString() ?: ""
@@ -101,6 +124,7 @@ internal class ScrcpyControllerSettingsComponent {
   fun apply() {
     modProps.apply {
       props.scrcpyPath = scrcpyPath
+      props.adbPath = adbPath
       props.forceAdbForward = forceAdbForward
       props.noMipmaps = noMipmaps
       props.startPort = startPort
@@ -132,5 +156,26 @@ internal class ScrcpyControllerSettingsComponent {
     this?.addActionListener {
       prop.set(modProps, isSelected)
     }
+  }
+
+
+  private fun pathTestCommand() = arrayListOf<String>().apply {
+    val path = scrcpyPath?.textField?.text
+    if (path != null) {
+      add(path + File.separator + "scrcpy")
+    } else {
+      add("scrcpy")
+    }
+    add("-v")
+  }
+
+  private fun adbTestCommand() = arrayListOf<String>().apply {
+    val adb = adbPath?.textField?.text
+    if (adb != null) {
+      add(adb)
+    } else {
+      add("adb")
+    }
+    add("version")
   }
 }

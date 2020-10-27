@@ -11,13 +11,21 @@ import java.io.InputStreamReader
  * on 19/06/2020
  */
 
-class CommandExecutor(cmds: List<String>, var modalityState: ModalityState? = null, private val onUpdate: (exitCode: Int?, line: String?, fullOutput: String?, ioe: Boolean) -> Unit) : Thread() {
+class CommandExecutor(
+  cmds: List<String>,
+  private var adbPath: String? = null,
+  private var modalityState: ModalityState? = null,
+  private val onUpdate: (exitCode: Int?, line: String?, fullOutput: String?, ioe: Boolean) -> Unit
+) : Thread() {
 
   init {
     println("Got Command: ${cmds.joinToString(" ")}")
   }
 
   private val processBuilder = ProcessBuilder(cmds).apply {
+    adbPath?.let {
+      environment().put("ADB", it)
+    }
     redirectError(ProcessBuilder.Redirect.PIPE)
     redirectOutput(ProcessBuilder.Redirect.PIPE)
     redirectInput(ProcessBuilder.Redirect.PIPE)
