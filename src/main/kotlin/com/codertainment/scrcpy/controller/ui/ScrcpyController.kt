@@ -470,12 +470,12 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
       updateButtons()
 
       devices?.apply {
-        model = object : DefaultTableModel(allDevices.map {
-          var serial = it.serial
-          if (commandExecutors.containsKey(it.serial)) {
+        model = object : DefaultTableModel(allDevices.mapIndexed { index, device ->
+          var serial = device.serial
+          if (commandExecutors.containsKey(device.serial)) {
             serial += " •"
           }
-          arrayOf(false, serial, it.state.name)
+          arrayOf(index == 0, serial, device.state.name)
         }.toTypedArray(), arrayOf("Select", "Serial", "State")) {
           override fun getColumnClass(p0: Int): Class<*> {
             return if (p0 == 0) Boolean::class.javaObjectType else String::class.java
