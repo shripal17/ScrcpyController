@@ -1,5 +1,5 @@
 # Scrcpy Controller
-![JetBrains plugins](https://img.shields.io/jetbrains/plugin/d/14565) ![JetBrains Plugins](https://img.shields.io/jetbrains/plugin/v/14565) ![JetBrains Plugins](https://img.shields.io/jetbrains/plugin/r/rating/14565)
+[![JetBrains plugins](https://img.shields.io/jetbrains/plugin/d/14565)](https://plugins.jetbrains.com/plugin/14565-scrcpy) [![JetBrains Plugins](https://img.shields.io/jetbrains/plugin/v/14565)](https://plugins.jetbrains.com/plugin/14565-scrcpy) [![JetBrains Plugins](https://img.shields.io/jetbrains/plugin/r/rating/14565)](https://plugins.jetbrains.com/plugin/14565-scrcpy)
 
 IntelliJ/Android Studio plugin for running and managing [scrcpy](https://github.com/Genymobile/scrcpy) and adb devices (USB & WiFi both)
 
