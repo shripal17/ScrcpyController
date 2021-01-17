@@ -60,6 +60,7 @@ data class ScrcpyProps(
   var preferText: Boolean = false,
   var disableScreenSaver: Boolean = false,
   var disableKeyRepeat: Boolean = false,
+  var forwardAllClicks: Boolean = false,
 
   //advanced
   var forceAdbForward: Boolean = false,
@@ -70,10 +71,13 @@ data class ScrcpyProps(
   var renderDriver: RenderDriver = RenderDriver.Auto,
   var verbosity: Verbosity = Verbosity.Info,
   var displayId: Int? = null,
-  var shortcutMod: String? = null
+  var shortcutMod: String? = null,
+  var encoder: String? = null,
+  var legacyPaste: Boolean = false,
 ) : PersistentStateComponent<ScrcpyProps> {
 
   companion object {
+
     fun getInstance() = ServiceManager.getService(ScrcpyProps::class.java)
   }
 
@@ -201,6 +205,9 @@ data class ScrcpyProps(
     if (disableKeyRepeat) {
       add("--no-key-repeat")
     }
+    if (forwardAllClicks) {
+      add("--forward-all-clicks")
+    }
 
     if (forceAdbForward) {
       add("--force-adb-forward")
@@ -229,6 +236,12 @@ data class ScrcpyProps(
     }
     if (shortcutMod != null) {
       add("--shortcut-mod=$shortcutMod")
+    }
+    if (encoder != null) {
+      add("--encoder=$encoder")
+    }
+    if(legacyPaste) {
+      add("--legacy-paste")
     }
   }
 }

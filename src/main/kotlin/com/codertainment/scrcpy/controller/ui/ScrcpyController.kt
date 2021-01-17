@@ -12,7 +12,6 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.ui.table.JBTable
-import com.intellij.util.net.IOExceptionDialog
 import com.vladsch.flexmark.ext.tables.TablesExtension
 import com.vladsch.flexmark.html.HtmlRenderer
 import com.vladsch.flexmark.parser.Parser
@@ -101,6 +100,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private var preferText: JCheckBox? = null
   private var disableScreenSaver: JCheckBox? = null
   private var disableKeyRepeat: JCheckBox? = null
+  private var forwardAllClicks: JCheckBox? = null
 
   //help and about
   private var scrcpyButton: JButton? = null
@@ -111,8 +111,8 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private val options = MutableDataSet().apply {
     set(Parser.EXTENSIONS, listOf(TablesExtension.create()))
   }
-  var parser = Parser.builder(options).build()
-  var renderer = HtmlRenderer.builder(options).build()
+  private var parser = Parser.builder(options).build()
+  private var renderer = HtmlRenderer.builder(options).build()
 
   private var run: JButton? = null
   private var stop: JButton? = null
@@ -149,7 +149,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
                 loadDevices(false)
                 if (exit != 0) {
                   val action = ScrcpyNotificationAction("View Error") { _, _ ->
-                    IOExceptionDialog("scrcpy error", fullOp).showAndGet()
+                    TextDialog("scrcpy Error", fullOp ?: "Something went wrong", false).showAndGet()
                     Unit
                   }
                   Notifier.notify("scrcpy failed", "An error occurred", NotificationType.ERROR, listOf(action))
@@ -166,8 +166,8 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
                 }
                 Notifier.notify("scrcpy failed", notifMsg, NotificationType.ERROR, listOf(action))
               }
-              msg?.let {
-                println(it)
+              msg?.let { _ ->
+                println(msg)
               }
             }
             commandExecutors[it] = cmd
@@ -206,14 +206,22 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private fun startDeviceWatcher() {
     if (toolWindow.isActive) {
       Thread {
-        deviceWatcher?.watch()
+        try {
+          deviceWatcher?.watch()
+        } catch (e: Exception) {
+          e.printStackTrace()
+        }
       }.start()
     }
   }
 
   private fun stopDeviceWatcher() {
     Thread {
-      deviceWatcher?.stop()
+      try {
+        deviceWatcher?.stop()
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
     }.start()
   }
 
@@ -253,7 +261,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     folder?.textField?.bindString(ScrcpyProps::recordingPath)
     folder?.addBrowseFolderListener(object : TextBrowseFolderListener(FileChooserDescriptor(false, true, false, false, false, false)) {
       override fun getInitialFile(): VirtualFile? {
-        return if (props.recordingPath == null) null else LocalFileSystem.getInstance().findFileByIoFile(File(props.recordingPath))
+        return if (props.recordingPath == null) null else LocalFileSystem.getInstance().findFileByIoFile(File(props.recordingPath ?: ""))
       }
     })
   }
@@ -288,6 +296,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     preferText.bind(ScrcpyProps::preferText)
     disableScreenSaver.bind(ScrcpyProps::disableScreenSaver)
     disableKeyRepeat.bind(ScrcpyProps::disableKeyRepeat)
+    forwardAllClicks.bind(ScrcpyProps::forwardAllClicks)
   }
 
   private fun initIpFields() {
@@ -392,14 +401,14 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
                   Notifier.notify(
                     "ADB to WiFi Failed", "Could not switch device $it to WiFi", NotificationType.ERROR,
                     listOf(ScrcpyNotificationAction("View Error") { _, _ ->
-                      IOExceptionDialog("scrcpy error", fullOp).showAndGet()
+                      TextDialog("scrcpy Error", fullOp ?: "Something went wrong", false).showAndGet()
                     })
                   )
                 } else {
                   Thread.sleep(1500)
                   CommandExecutor(listOf(props.adbPath(), "-s", serial, "shell", "ip -f inet addr show wlan0")) { exitCode, _, fullOp, _ ->
-                    exitCode?.let {
-                      if (it == 0 && fullOp != null) {
+                    exitCode?.let { _ ->
+                      if (exitCode == 0 && fullOp != null) {
                         val ip = fullOp.split("inet ")[1].split("/")[0]
                         connectAdbWifi(ip, props.port ?: 5555)
                       }
@@ -467,15 +476,14 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
       toWifi.clear()
       toDisconnect.clear()
 
-      updateButtons()
-
       devices?.apply {
-        model = object : DefaultTableModel(allDevices.map {
-          var serial = it.serial
-          if (commandExecutors.containsKey(it.serial)) {
+        model = object : DefaultTableModel(allDevices.mapIndexed { index, device ->
+          var serial = device.serial
+          if (commandExecutors.containsKey(device.serial)) {
             serial += " •"
           }
-          arrayOf(false, serial, it.state.name)
+          if (selectedDevices.isEmpty() && index == 0) selectedDevices.add(device.serial)
+          arrayOf(index == 0, serial, device.state.name)
         }.toTypedArray(), arrayOf("Select", "Serial", "State")) {
           override fun getColumnClass(p0: Int): Class<*> {
             return if (p0 == 0) Boolean::class.javaObjectType else String::class.java
@@ -493,6 +501,8 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
         }
       }
       devices?.preferredScrollableViewportSize = Dimension(devices?.preferredSize?.width ?: 0, devices?.rowHeight ?: 0 * 3)
+
+      updateButtons()
     } catch (ce: ConnectException) {
       ce.printStackTrace()
       startAdbDaemon {

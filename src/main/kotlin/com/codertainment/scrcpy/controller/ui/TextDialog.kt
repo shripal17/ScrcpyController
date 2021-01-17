@@ -2,10 +2,10 @@ package com.codertainment.scrcpy.controller.ui
 
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.util.ui.UIUtil
 import javax.swing.JComponent
 import javax.swing.JEditorPane
 import javax.swing.JPanel
+import javax.swing.UIManager
 import javax.swing.event.HyperlinkEvent
 
 /*
@@ -13,7 +13,7 @@ import javax.swing.event.HyperlinkEvent
  * on 21/06/2020
  */
 
-class TextDialog(private val mTitle: String, private var text: String, private val isHtml: Boolean) : DialogWrapper(true) {
+class TextDialog(mTitle: String, private var text: String, private val isHtml: Boolean) : DialogWrapper(true) {
 
   init {
     init()
@@ -24,15 +24,19 @@ class TextDialog(private val mTitle: String, private var text: String, private v
   private var textPane: JEditorPane? = null
 
   override fun createCenterPanel(): JComponent? {
+    val foregroundColor = UIManager.getColor("Label.foreground")
+    val foregroundHex = String.format("#%02x%02x%02x", foregroundColor.red, foregroundColor.green, foregroundColor.blue)
     if (isHtml) {
       textPane?.contentType = "text/html"
     }
-    if (UIUtil.isUnderDarcula() && isHtml) {
-      text = "<span style=\"color:white;\">$text</span>"
+    if (isHtml) {
+      text = "<span style=\"color:$foregroundHex;\">$text</span>"
     }
     // println(text)
     textPane?.apply {
-      text = this@TextDialog.text
+      foreground = UIManager.getColor("Label.foreground")
+      background = UIManager.getColor("Label.background")
+      text = this@TextDialog.text.replace("\n", "<br>")
       isEditable = false
       isOpaque = false
       addHyperlinkListener {

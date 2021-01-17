@@ -1,6 +1,6 @@
 buildscript {
 
-    ext.kotlin_version = '1.4.10'
+    ext.kotlin_version = '1.4.21'
 
     repositories {
         mavenCentral()
@@ -31,17 +31,29 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     }
 }
 group "com.codertainment"
-version "0.1.3"
+version "0.1.4"
 
 intellij {
     pluginName 'Scrcpy Controller'
     updateSinceUntilBuild false
-    version 'IU-2020.2.3'
+    version 'IU-2020.3.1'
 
     //intellij.localPath = project.hasProperty("StudioRunPath") ? StudioRunPath : StudioCompilePath
 }
 patchPluginXml {
     changeNotes """
+        <b>v0.1.4</b>: <br>
+        <ul>
+            <li>Auto-select first device from the list (thanks to @rvp-diconium for the suggestion)</li>
+            <li>Options for scrcpy v1.17:
+                <ul> 
+                    <li>Added 'Forward all clicks' option</li>
+                    <li>Added 'Use legacy paste' and 'Encoder' setting in advanced menu</li>
+                </ul>
+            </li>
+            <li>Minor fixes here and there</li>
+        </ul>
+        <br>
         <b>v0.1.3</b>: Add option to set adb path (use only if scrcpy can't detect ADB Path) (maybe necessary for macOS)<br>
         <b>v0.1.2</b>: Really fix shortcut MOD setting not working (this time I've tested it :P)<br>
         <b>v0.1.1</b>: Fix Shortcut MOD setting not working<br>

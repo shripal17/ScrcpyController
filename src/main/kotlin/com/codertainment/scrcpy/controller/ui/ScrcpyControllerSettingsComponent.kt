@@ -22,6 +22,8 @@ import javax.swing.*
  */
 internal class ScrcpyControllerSettingsComponent {
 
+  // To add options, make changes at 4 places at mentioned in comments
+
   private val props = ScrcpyProps.getInstance()
   private var modProps = props.copy()
 
@@ -31,8 +33,10 @@ internal class ScrcpyControllerSettingsComponent {
   private var pathTest: JButton? = null
   private var adbTest: JButton? = null
 
+  // STEP 1: Add respective binding widget here after adding the widget to .form file
   private var forceAdbForward: JCheckBox? = null
   private var noMipmaps: JCheckBox? = null
+  private var legacyPaste: JCheckBox? = null
   private var startPort: JFormattedTextField? = null
   private var endPort: JFormattedTextField? = null
   private var pushTarget: JFormattedTextField? = null
@@ -40,6 +44,7 @@ internal class ScrcpyControllerSettingsComponent {
   private var verbosity: JComboBox<String>? = null
   private var displayId: JFormattedTextField? = null
   private var shortcutMod: JFormattedTextField? = null
+  private var encoder: JTextField? = null
 
   init {
     scrcpyPath?.addBrowseFolderListener(object : TextBrowseFolderListener(FileChooserDescriptor(false, true, false, false, false, false)) {
@@ -52,10 +57,12 @@ internal class ScrcpyControllerSettingsComponent {
         return if (modProps.scrcpyPath == null) null else LocalFileSystem.getInstance().findFileByIoFile(File(modProps.adbPath))
       }
     })
+    // STEP 2: Bind new widgets to props
     scrcpyPath?.textField?.bindString(ScrcpyProps::scrcpyPath)
     adbPath?.textField?.bindString(ScrcpyProps::adbPath)
     forceAdbForward?.bind(ScrcpyProps::forceAdbForward)
     noMipmaps?.bind(ScrcpyProps::noMipmaps)
+    legacyPaste?.bind(ScrcpyProps::legacyPaste)
 
     startPort?.bindNumber(65535, ScrcpyProps::startPort)
     endPort?.bindNumber(65535, ScrcpyProps::endPort)
@@ -72,6 +79,7 @@ internal class ScrcpyControllerSettingsComponent {
     displayId?.bindNumber(9, ScrcpyProps::displayId)
 
     shortcutMod?.bindString(ScrcpyProps::shortcutMod)
+    encoder?.bindString(ScrcpyProps::encoder)
 
     pathTest?.addActionListener {
       CommandExecutor(pathTestCommand(), modalityState = ModalityState.current()) { e, _, fullOp, ioe ->
@@ -104,16 +112,19 @@ internal class ScrcpyControllerSettingsComponent {
   }
 
   fun init() {
+    // STEP 3: load widgets with saved props
     modProps = props.copy()
     scrcpyPath?.textField?.text = modProps.scrcpyPath ?: ""
     adbPath?.textField?.text = modProps.adbPath ?: ""
     forceAdbForward?.isSelected = modProps.forceAdbForward
     noMipmaps?.isSelected = modProps.noMipmaps
+    legacyPaste?.isSelected = modProps.legacyPaste
     startPort?.text = modProps.startPort?.toString() ?: ""
     endPort?.text = modProps.endPort?.toString() ?: ""
     pushTarget?.text = modProps.pushTarget ?: ""
     displayId?.text = modProps.displayId?.toString() ?: ""
     shortcutMod?.text = modProps.shortcutMod ?: ""
+    encoder?.text = modProps.encoder ?: ""
 
     renderDriver?.selectedIndex = RenderDriver.values().indexOf(modProps.renderDriver)
     verbosity?.selectedIndex = Verbosity.values().indexOf(modProps.verbosity)
@@ -122,11 +133,13 @@ internal class ScrcpyControllerSettingsComponent {
   fun isModified() = props != modProps
 
   fun apply() {
+    // STEP 4: apply new props
     modProps.apply {
       props.scrcpyPath = scrcpyPath
       props.adbPath = adbPath
       props.forceAdbForward = forceAdbForward
       props.noMipmaps = noMipmaps
+      props.legacyPaste = legacyPaste
       props.startPort = startPort
       props.endPort = endPort
       props.pushTarget = pushTarget
@@ -134,6 +147,7 @@ internal class ScrcpyControllerSettingsComponent {
       props.renderDriver = renderDriver
       props.verbosity = verbosity
       props.shortcutMod = shortcutMod
+      props.encoder = encoder
     }
   }
 
