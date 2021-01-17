@@ -32,6 +32,8 @@ Install the plugin in Android Studio/IntelliJ-based IDE via:
 1. Download and extract [scrcpy](https://github.com/Genymobile/scrcpy) to any folder of your choice
 2. Go to IDE Settings -> Tools -> Scrcpy Controller -> Enter/choose the location of the previously extracted scrcpy release -> Click on *Test* button to verify selected/entered path -> *Ok* button
 
+### If you like this plugin, please don't forget to leave a rating on the [JetBrains Plugins Marketplace](https://plugins.jetbrains.com/plugin/14565-scrcpy/reviews)
+
 ## Bonus
 - All options visible in the UI excluding the devices table (obviously) persist their values across IDE Restarts!
 - The `To WiFi` button will automatically try to switch your USB-connected device to WiFi adb by:
