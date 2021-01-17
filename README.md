@@ -1,4 +1,6 @@
 # Scrcpy Controller
+![JetBrains plugins](https://img.shields.io/jetbrains/plugin/d/14565) ![JetBrains Plugins](https://img.shields.io/jetbrains/plugin/v/14565) ![JetBrains Plugins](https://img.shields.io/jetbrains/plugin/r/rating/14565)
+
 IntelliJ/Android Studio plugin for running and managing [scrcpy](https://github.com/Genymobile/scrcpy) and adb devices (USB & WiFi both)
 
 ## Why
@@ -10,7 +12,7 @@ I am an Android Developer myself and I always use scrcpy ❤ to test my work on 
 - Run scrcpy on multiple devices effortlessly
 - Disconnect WiFi Devices
 - Connect WiFi Devices
-- All options from [scrcpy v1.16](https://github.com/Genymobile/scrcpy) are configurable from the UI
+- All options from [scrcpy v1.17](https://github.com/Genymobile/scrcpy) are configurable from the UI
 - Quick *Shortcuts* button for you to remember scrcpy shortcuts
 - Easy installation, scrcpy does not need to be added in your system's PATH Variable
 - *Shortcuts* are directly loaded from scrcpy's GitHub README if you are connected to the internet, else static shortcuts are loaded from scrcpy v1.16
@@ -21,8 +23,9 @@ I am an Android Developer myself and I always use scrcpy ❤ to test my work on 
 
 ## Installation
 Install the plugin in Android Studio/IntelliJ-based IDE via:
-#### JetBrains Plugins Marketplace
+#### [JetBrains Plugins Marketplace](https://plugins.jetbrains.com/plugin/14565-scrcpy)
    - Search for 'scrcpy Controller', install, and restart IDE
+
 #### Manually
    - Download latest plugin zip (should contain latest version in file name e.g. 0.1.0) from [releases](https://github.com/shripal17/ScrcpyController/releases/latest)
    - From Android Studio/IntelliJ-based IDE, open Settings -> Plugins -> Settings Icon -> Install plugin from disk and select the downloaded plugin zip -> Restart IDE
@@ -71,7 +74,7 @@ Install the plugin in Android Studio/IntelliJ-based IDE via:
 ## License
 
       
-      Copyright 2020 Shripal Jain
+      Copyright 2021 Shripal Jain
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.
