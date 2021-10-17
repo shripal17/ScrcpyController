@@ -8,8 +8,12 @@ import com.intellij.openapi.util.IconLoader
  */
 
 object Icons {
-  val GITHUB = IconLoader.getIcon("/github.svg")
-  val KEYBOARD = IconLoader.getIcon("/keyboard.svg")
-  val COFFEE = IconLoader.getIcon("/coffee.svg")
-  val TOOL_WINDOW = IconLoader.getIcon("/toolWindowIcon.svg")
+  @JvmField
+  val GITHUB = IconLoader.getIcon("/github.svg", javaClass)
+  @JvmField
+  val KEYBOARD = IconLoader.getIcon("/keyboard.svg", javaClass)
+  @JvmField
+  val COFFEE = IconLoader.getIcon("/coffee.svg", javaClass)
+  @JvmField
+  val TOOL_WINDOW = IconLoader.getIcon("/toolWindowIcon.svg", javaClass)
 }

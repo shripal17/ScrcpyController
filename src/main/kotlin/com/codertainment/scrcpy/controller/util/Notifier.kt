@@ -1,8 +1,10 @@
 package com.codertainment.scrcpy.controller.util
 
-import com.intellij.notification.*
+import com.intellij.notification.Notification
+import com.intellij.notification.NotificationAction
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnActionEvent
-import icons.Icons
 
 /*
  * Created by Shripal Jain
@@ -10,20 +12,21 @@ import icons.Icons
  */
 
 object Notifier {
-  val GROUP = NotificationGroup("scrcpy Connections", NotificationDisplayType.BALLOON, false, "scrcpy", Icons.TOOL_WINDOW)
 
   fun notify(title: String, message: String, type: NotificationType, actions: List<ScrcpyNotificationAction>? = null) {
-    val n = GROUP.createNotification(title, null, message, type, null)
-    if (actions != null && actions.isNotEmpty()) {
-      actions.forEach {
-        n.addAction(it)
-      }
+    val notif = NotificationGroupManager.getInstance().getNotificationGroup("scrcpy")
+      .createNotification(title, message, type)
+
+    actions?.forEach {
+      notif.addAction(it)
     }
-    n.notify(null)
+
+    notif.notify(null)
   }
 }
 
-class ScrcpyNotificationAction(title: String, private val onAction: (e: AnActionEvent, n: Notification) -> Unit) : NotificationAction(title) {
+class ScrcpyNotificationAction(title: String, private val onAction: (e: AnActionEvent, n: Notification) -> Unit) :
+  NotificationAction(title) {
   override fun actionPerformed(p0: AnActionEvent, p1: Notification) {
     invokeLater {
       onAction(p0, p1)

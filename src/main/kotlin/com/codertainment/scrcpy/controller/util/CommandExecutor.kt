@@ -34,7 +34,7 @@ class CommandExecutor(
 
   private var process: Process? = null
 
-  var output = StringBuilder()
+  private var output = StringBuilder()
 
   override fun run() {
     super.run()

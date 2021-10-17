@@ -4,7 +4,6 @@ buildscript {
 
     repositories {
         mavenCentral()
-        jcenter()
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
@@ -12,7 +11,7 @@ buildscript {
 }
 
 plugins {
-    id "org.jetbrains.intellij" version "0.4.21"
+    id "org.jetbrains.intellij" version "1.2.0"
 }
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -23,7 +22,6 @@ apply plugin: 'kotlin'
 repositories {
     mavenCentral()
     maven { url "https://jitpack.io" }
-    jcenter()
 }
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     kotlinOptions {
@@ -31,17 +29,27 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     }
 }
 group "com.codertainment"
-version "0.1.4"
+version "1.0.0"
 
 intellij {
-    pluginName 'Scrcpy Controller'
-    updateSinceUntilBuild false
-    version 'IU-2021.2.3'
+    pluginName='Scrcpy Controller'
+    updateSinceUntilBuild=false
+    version='IU-2020.3.1'
 
     //intellij.localPath = project.hasProperty("StudioRunPath") ? StudioRunPath : StudioCompilePath
 }
 patchPluginXml {
-    changeNotes """
+    changeNotes="""
+        <b>v1.0.0</b>: <br>
+        Add options from scrcpy v1.19 and v1.18 release: <br>
+        <ul>
+            <li>(Linux Only) Specify V4L2 device (TODO: V4L2Loopback device creation directly from this plugin/tool)</li>
+            <li>Display & V4L2 Buffer</li>
+            <li>Power off on close (displayed as "Screen off (and lock) on exit" to avoid confusion)</li>
+            <li>Now requires minimum IJ v2020.3+</li>
+            <li>Minor fixes</li>
+        </ul>
+        <br>
         <b>v0.1.4</b>: <br>
         <ul>
             <li>Auto-select first device from the list (thanks to @rvp-diconium for the suggestion)</li>
@@ -71,7 +79,7 @@ patchPluginXml {
 }
 
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
     implementation "com.github.vidstige:jadb:v1.2.1"

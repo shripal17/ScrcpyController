@@ -13,7 +13,7 @@ import javax.swing.text.NumberFormatter
  * on 18/06/2020
  */
 
-internal fun JTextField?.active() = !this?.text.isNullOrEmpty()
+//internal fun JTextField?.active() = !this?.text.isNullOrEmpty()
 internal fun JTextField?.text() = this?.text ?: ""
 
 internal fun JFormattedTextField?.numberFormatter(maxValue: Int, defValue: Int? = null) {

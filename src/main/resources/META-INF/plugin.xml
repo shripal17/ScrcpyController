@@ -19,6 +19,7 @@
     <applicationConfigurable
       displayName="Scrcpy Controller" id="com.codertainment.scrcpy.controller.ui.ScrcpyControllerConfigurable" instance="com.codertainment.scrcpy.controller.ui.ScrcpyControllerConfigurable"
       parentId="tools"/>
+    <notificationGroup id="scrcpy" displayType="BALLOON"/>
   </extensions>
-  <idea-version since-build="193.4099.13"/>
+  <idea-version since-build="203.6682.168"/>
 </idea-plugin>

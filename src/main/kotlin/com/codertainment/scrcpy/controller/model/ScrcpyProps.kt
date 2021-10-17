@@ -1,9 +1,9 @@
 package com.codertainment.scrcpy.controller.model
 
 import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
 import com.intellij.util.xmlb.XmlSerializerUtil
 import java.io.File
 
@@ -30,6 +30,8 @@ data class ScrcpyProps(
   var v4l2BufferEnabled: Boolean = false,
   var displayBufferValue: Int? = null,
   var v4l2BufferValue: Int? = null,
+  var v4l2Enabled: Boolean = false,
+  var v4l2DeviceNumber: Int? = null,
 
   var crop: Boolean = false,
   var cropX: Int? = null,
@@ -84,10 +86,10 @@ data class ScrcpyProps(
 
   companion object {
 
-    fun getInstance() = ServiceManager.getService(ScrcpyProps::class.java)
+    fun getInstance() = service<ScrcpyProps>()
   }
 
-  override fun getState(): ScrcpyProps? = this
+  override fun getState(): ScrcpyProps = this
   override fun loadState(state: ScrcpyProps) {
     XmlSerializerUtil.copyBean(state, this)
   }
@@ -136,6 +138,12 @@ data class ScrcpyProps(
       add("--v4l2-buffer")
       add(v4l2BufferValue.toString())
     }
+
+    if (v4l2Enabled && v4l2DeviceNumber != null) {
+      add("--v4l2-sink")
+      add("/dev/video$v4l2DeviceNumber")
+    }
+
     if (cropX != null && cropY != null && cropXOffset != null && cropYOffset != null && crop) {
       add("--crop")
       add("$cropX:$cropY:$cropXOffset:$cropYOffset")
@@ -247,7 +255,7 @@ data class ScrcpyProps(
     }
     if (verbosity != Verbosity.Info) {
       add("--verbosity")
-      add(verbosity.name.toLowerCase())
+      add(verbosity.name.lowercase())
     }
     if (displayId != null) {
       add("--display")

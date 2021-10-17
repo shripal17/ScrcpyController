@@ -56,7 +56,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private var devices: JBTable? = null
   private var toWiFi: JButton? = null
   private var disconnect: JButton? = null
-  private val IP_REGEX = Regex(
+  private val ipRegex = Regex(
     "^(([0-9]{1,3}\\.){3})[0-9]{1,3}:[0-9]{1,5}\$"
   )
 
@@ -70,6 +70,8 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private var v4l2BufferEnabled: JCheckBox? = null
   private var displayBufferValue: JFormattedTextField? = null
   private var v4l2BufferValue: JFormattedTextField? = null
+  private var v4l2Enabled: JCheckBox? = null
+  private var v4l2DeviceNumber: JFormattedTextField? = null
   private var crop: JCheckBox? = null
   private var cropX: JFormattedTextField? = null
   private var cropY: JFormattedTextField? = null
@@ -251,6 +253,9 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     displayBufferValue.bindNumber(10_000, ScrcpyProps::displayBufferValue)
     v4l2BufferValue.bindNumber(10_000, ScrcpyProps::v4l2BufferValue)
 
+    v4l2Enabled.bind(ScrcpyProps::v4l2Enabled)
+    v4l2DeviceNumber.bindNumber(99, ScrcpyProps::v4l2DeviceNumber)
+
     crop.bind(ScrcpyProps::crop)
 
     cropX.bindNumber(7680, ScrcpyProps::cropX)
@@ -354,10 +359,10 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     donateButton?.icon = Icons.COFFEE
 
     scrcpyButton?.addActionListener {
-      BrowserUtil.browse("http://github.com/Genymobile/scrcpy")
+      BrowserUtil.browse("https://github.com/Genymobile/scrcpy")
     }
     scrcpyControllerButton?.addActionListener {
-      BrowserUtil.browse("http://github.com/shripal17/ScrcpyController")
+      BrowserUtil.browse("https://github.com/shripal17/ScrcpyController")
     }
     shortcutsButton?.addActionListener {
       try {
@@ -540,7 +545,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
         }
       }
       devices?.preferredScrollableViewportSize =
-        Dimension(devices?.preferredSize?.width ?: 0, devices?.rowHeight ?: 0 * 3)
+        Dimension(devices?.preferredSize?.width ?: 0, devices?.rowHeight ?: (0 * 3))
 
       updateButtons()
     } catch (ce: ConnectException) {
@@ -594,7 +599,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
           } else if (selectedDevices.contains(current)) {
             selectedDevices.remove(current)
           }
-          if (current.matches(IP_REGEX)) {
+          if (current.matches(ipRegex)) {
             if (isChecked) {
               toDisconnect.add(current)
             } else {
