@@ -66,6 +66,10 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private var bitRate: JFormattedTextField? = null
   private var bitRateUnit: JComboBox<String>? = null
   private var videoOrientation: JComboBox<String>? = null
+  private var displayBufferEnabled: JCheckBox? = null
+  private var v4l2BufferEnabled: JCheckBox? = null
+  private var displayBufferValue: JFormattedTextField? = null
+  private var v4l2BufferValue: JFormattedTextField? = null
   private var crop: JCheckBox? = null
   private var cropX: JFormattedTextField? = null
   private var cropY: JFormattedTextField? = null
@@ -101,6 +105,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
   private var disableScreenSaver: JCheckBox? = null
   private var disableKeyRepeat: JCheckBox? = null
   private var forwardAllClicks: JCheckBox? = null
+  private var powerOffOnClose: JCheckBox? = null
 
   //help and about
   private var scrcpyButton: JButton? = null
@@ -159,7 +164,8 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
                 commandExecutors.remove(it)
                 val notifMsg =
                   if (props.scrcpyPath != null && !props.scrcpyPath.isNullOrEmpty()) "scrcpy was not found in the configured path" else "scrcpy path is not configured"
-                val actionText = if (props.scrcpyPath != null && !props.scrcpyPath.isNullOrEmpty()) "Re-configure" else "Configure"
+                val actionText =
+                  if (props.scrcpyPath != null && !props.scrcpyPath.isNullOrEmpty()) "Re-configure" else "Configure"
 
                 val action = ScrcpyNotificationAction(actionText) { _, _ ->
                   ShowSettingsUtil.getInstance().showSettingsDialog(null, ScrcpyControllerConfigurable::class.java)
@@ -207,7 +213,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     if (toolWindow.isActive) {
       Thread {
         try {
-          deviceWatcher?.watch()
+          deviceWatcher?.run()
         } catch (e: Exception) {
           e.printStackTrace()
         }
@@ -240,6 +246,11 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
       props.videoOrientation = VideoOrientation.values()[videoOrientation?.selectedIndex ?: 0]
     }
 
+    displayBufferEnabled.bind(ScrcpyProps::displayBufferEnabled)
+    v4l2BufferEnabled.bind(ScrcpyProps::v4l2BufferEnabled)
+    displayBufferValue.bindNumber(10_000, ScrcpyProps::displayBufferValue)
+    v4l2BufferValue.bindNumber(10_000, ScrcpyProps::v4l2BufferValue)
+
     crop.bind(ScrcpyProps::crop)
 
     cropX.bindNumber(7680, ScrcpyProps::cropX)
@@ -259,9 +270,11 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     }
 
     folder?.textField?.bindString(ScrcpyProps::recordingPath)
-    folder?.addBrowseFolderListener(object : TextBrowseFolderListener(FileChooserDescriptor(false, true, false, false, false, false)) {
+    folder?.addBrowseFolderListener(object :
+      TextBrowseFolderListener(FileChooserDescriptor(false, true, false, false, false, false)) {
       override fun getInitialFile(): VirtualFile? {
-        return if (props.recordingPath == null) null else LocalFileSystem.getInstance().findFileByIoFile(File(props.recordingPath ?: ""))
+        return if (props.recordingPath == null) null else LocalFileSystem.getInstance()
+          .findFileByIoFile(File(props.recordingPath ?: ""))
       }
     })
   }
@@ -297,6 +310,7 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     disableScreenSaver.bind(ScrcpyProps::disableScreenSaver)
     disableKeyRepeat.bind(ScrcpyProps::disableKeyRepeat)
     forwardAllClicks.bind(ScrcpyProps::forwardAllClicks)
+    powerOffOnClose.bind(ScrcpyProps::powerOffOnClose)
   }
 
   private fun initIpFields() {
@@ -347,7 +361,8 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
     }
     shortcutsButton?.addActionListener {
       try {
-        val scrcpy = URL("https://raw.githubusercontent.com/Genymobile/scrcpy/master/README.md").readText().split("## Shortcuts")[1].split("##")[0]
+        val scrcpy = URL("https://raw.githubusercontent.com/Genymobile/scrcpy/master/README.md").readText()
+          .split("## Shortcuts")[1].split("##")[0]
         TextDialog("scrcpy Shortcuts", renderer.render(parser.parse(scrcpy)), true).showAndGet()
       } catch (e: Exception) {
         e.printStackTrace()
@@ -395,7 +410,15 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
       toWifi.forEach { serial ->
         runInBg {
           try {
-            CommandExecutor(listOf(props.adbPath(), "-s", serial, "tcpip", props.port?.toString() ?: "5555")) { exitCode, _, fullOp, _ ->
+            CommandExecutor(
+              listOf(
+                props.adbPath(),
+                "-s",
+                serial,
+                "tcpip",
+                props.port?.toString() ?: "5555"
+              )
+            ) { exitCode, _, fullOp, _ ->
               exitCode?.let {
                 if (it != 0) {
                   Notifier.notify(
@@ -406,7 +429,15 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
                   )
                 } else {
                   Thread.sleep(1500)
-                  CommandExecutor(listOf(props.adbPath(), "-s", serial, "shell", "ip -f inet addr show wlan0")) { exitCode, _, fullOp, _ ->
+                  CommandExecutor(
+                    listOf(
+                      props.adbPath(),
+                      "-s",
+                      serial,
+                      "shell",
+                      "ip -f inet addr show wlan0"
+                    )
+                  ) { exitCode, _, fullOp, _ ->
                     exitCode?.let { _ ->
                       if (exitCode == 0 && fullOp != null) {
                         val ip = fullOp.split("inet ")[1].split("/")[0]
@@ -436,7 +467,11 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
         ce.printStackTrace()
         startAdbDaemon {
           if (!it) {
-            Notifier.notify("scrcpy ADB Failed", "ADB initialization failed, please run adb manually", NotificationType.ERROR)
+            Notifier.notify(
+              "scrcpy ADB Failed",
+              "ADB initialization failed, please run adb manually",
+              NotificationType.ERROR
+            )
           } else {
             wifiConnect?.doClick()
           }
@@ -459,7 +494,11 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
       conn = null
       startAdbDaemon {
         if (!it) {
-          Notifier.notify("scrcpy ADB Failed", "ADB initialization failed, please run adb manually", NotificationType.ERROR)
+          Notifier.notify(
+            "scrcpy ADB Failed",
+            "ADB initialization failed, please run adb manually",
+            NotificationType.ERROR
+          )
         } else {
           initAdb()
         }
@@ -500,14 +539,19 @@ internal class ScrcpyController(private val toolWindow: ToolWindow) : DeviceDete
           width = 60
         }
       }
-      devices?.preferredScrollableViewportSize = Dimension(devices?.preferredSize?.width ?: 0, devices?.rowHeight ?: 0 * 3)
+      devices?.preferredScrollableViewportSize =
+        Dimension(devices?.preferredSize?.width ?: 0, devices?.rowHeight ?: 0 * 3)
 
       updateButtons()
     } catch (ce: ConnectException) {
       ce.printStackTrace()
       startAdbDaemon {
         if (!it) {
-          Notifier.notify("scrcpy ADB Failed", "ADB initialization failed, please run adb manually", NotificationType.ERROR)
+          Notifier.notify(
+            "scrcpy ADB Failed",
+            "ADB initialization failed, please run adb manually",
+            NotificationType.ERROR
+          )
         } else {
           loadDevices()
         }

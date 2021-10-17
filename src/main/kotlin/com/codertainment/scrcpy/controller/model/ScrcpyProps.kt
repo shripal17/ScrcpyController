@@ -26,6 +26,11 @@ data class ScrcpyProps(
   var bitRate: Int? = null,
   var bitRateUnit: BitRateUnit = BitRateUnit.M,
   var videoOrientation: VideoOrientation = VideoOrientation.Unlocked,
+  var displayBufferEnabled: Boolean = false,
+  var v4l2BufferEnabled: Boolean = false,
+  var displayBufferValue: Int? = null,
+  var v4l2BufferValue: Int? = null,
+
   var crop: Boolean = false,
   var cropX: Int? = null,
   var cropY: Int? = null,
@@ -61,6 +66,7 @@ data class ScrcpyProps(
   var disableScreenSaver: Boolean = false,
   var disableKeyRepeat: Boolean = false,
   var forwardAllClicks: Boolean = false,
+  var powerOffOnClose: Boolean = false,
 
   //advanced
   var forceAdbForward: Boolean = false,
@@ -117,9 +123,19 @@ data class ScrcpyProps(
 
     if (videoOrientation != VideoOrientation.Unlocked) {
       add("--lock-video-orientation")
-      add(videoOrientation.value.toString())
+      if (videoOrientation.value != null) {
+        add(videoOrientation.value.toString())
+      }
     }
 
+    if (displayBufferEnabled) {
+      add("--display-buffer")
+      add(displayBufferValue.toString())
+    }
+    if (v4l2BufferEnabled) {
+      add("--v4l2-buffer")
+      add(v4l2BufferValue.toString())
+    }
     if (cropX != null && cropY != null && cropXOffset != null && cropYOffset != null && crop) {
       add("--crop")
       add("$cropX:$cropY:$cropXOffset:$cropYOffset")
@@ -208,6 +224,9 @@ data class ScrcpyProps(
     if (forwardAllClicks) {
       add("--forward-all-clicks")
     }
+    if (powerOffOnClose) {
+      add("--power-off-on-close")
+    }
 
     if (forceAdbForward) {
       add("--force-adb-forward")
@@ -240,14 +259,15 @@ data class ScrcpyProps(
     if (encoder != null) {
       add("--encoder=$encoder")
     }
-    if(legacyPaste) {
+    if (legacyPaste) {
       add("--legacy-paste")
     }
   }
 }
 
 enum class VideoOrientation(val value: Int? = null) {
-  Unlocked,
+  Unlocked(-1),
+  Initial,
   Portrait(0),
   Landscape(1),
   PortraitReverse(2),
